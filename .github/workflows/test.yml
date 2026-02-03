@@ -17,7 +17,8 @@ jobs:
     - name: Build and check package
       run: >
         docker run --rm
-        -v ${{ github.workspace }}/ansi_art_convert:/app/ansi_art_convert
+        -u root
+        -v ${{ github.workspace }}/ansi_art_convert/:/app/ansi_art_convert/
         -v ${{ github.workspace }}/pyproject.toml:/app/pyproject.toml
         -v ${{ github.workspace }}/README.md:/app/README.md
         -v ${{ github.workspace }}/LICENSE:/app/LICENSE
