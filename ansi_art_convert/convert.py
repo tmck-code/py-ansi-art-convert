@@ -1088,13 +1088,13 @@ class Renderer:
 
 def parse_args() -> dict:
     parser = ArgumentParser()
-    parser.add_argument('--fpath',      '-f', type=str, required=True)
-    parser.add_argument('--encoding',   '-e', type=str)
-    parser.add_argument('--sauce-only', '-s', action='store_true', default=False)
-    parser.add_argument('--verbose',    '-v', action='store_true', default=False)
-    parser.add_argument('--ice-colours',      action='store_true', default=False)
-    parser.add_argument('--font-name',        type=str)
-    parser.add_argument('--width',      '-w', type=int)
+    parser.add_argument('--fpath',      '-f', type=str, required=True,            help='Path to the ANSI file to render.')
+    parser.add_argument('--encoding',   '-e', type=str,                           help='Specify the file encoding (cp437, iso-8859-1, ascii, utf-8) if the auto-detection was incorrect.')
+    parser.add_argument('--sauce-only', '-s', action='store_true', default=False, help='Only output the SAUCE record information as JSON and exit.')
+    parser.add_argument('--verbose',    '-v', action='store_true', default=False, help='Enable verbose debug output.')
+    parser.add_argument('--ice-colours',      action='store_true', default=False, help='Force enabling ICE colours (non-blinking background).')
+    parser.add_argument('--font-name',        type=str,                           help='Specify the font name to determine glyph offset (overrides SAUCE font).')
+    parser.add_argument('--width',      '-w', type=int,                           help='Specify the output width (overrides SAUCE tinfo1).')
     return parser.parse_args().__dict__
 
 def main():
