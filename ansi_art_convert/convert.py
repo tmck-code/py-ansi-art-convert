@@ -1097,7 +1097,7 @@ def parse_args() -> dict:
     parser.add_argument('--width',      '-w', type=int)
     return parser.parse_args().__dict__
 
-def run():
+def main():
     args = parse_args()
     global DEBUG
     DEBUG = args.pop('verbose')
@@ -1132,4 +1132,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    main()

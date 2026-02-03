@@ -5,3 +5,6 @@ description = "ANSI > UTF-8 Conversion"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["laser-prynter"]
+
+[project.scripts]
+ansi-art-convert = "ansi_art_convert.convert:main"
