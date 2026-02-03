@@ -6,13 +6,11 @@ from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import chain, batched
-import json
 import os
 import pprint
 import sys
 from typing import Iterator, NamedTuple, Tuple, ClassVar
 
-from more_itertools import split_after
 from laser_prynter import pp
 
 from font_data import FONT_DATA, FILE_DATA_TYPES
