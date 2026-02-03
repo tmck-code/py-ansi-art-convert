@@ -1,5 +1,5 @@
 [project]
-name = "convert-ansi-unicode"
+name = "ansi-art-convert"
 version = "0.1.0"
 description = "ANSI > UTF-8 Conversion"
 readme = "README.md"
