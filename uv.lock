@@ -1,0 +1,23 @@
+version = 1
+revision = 3
+requires-python = ">=3.12"
+
+[[package]]
+name = "ansi-art-convert"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "laser-prynter" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "laser-prynter" }]
+
+[[package]]
+name = "laser-prynter"
+version = "0.2.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/d0/d0611fca52b3ae05d420af97d061fdb6e94c2b113dbb19bca81f22d96c8d/laser_prynter-0.2.7.tar.gz", hash = "sha256:6479d54d094ed008d85e698fecc852498130063d2905e54e39c9bd4d418f4363", size = 12516, upload-time = "2026-02-03T11:50:16.05Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/84/88/c8e5746dc05b7f56257acce78e55c27cd1414c0a80f502f125eb98d27f2f/laser_prynter-0.2.7-py3-none-any.whl", hash = "sha256:2c886dca09b5794e06ffbefdf3be25b1ea5c3971e6e2c3a7014791cabf55424d", size = 13736, upload-time = "2026-02-03T11:50:14.649Z" },
+]
