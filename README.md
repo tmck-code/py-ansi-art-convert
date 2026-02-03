@@ -1,2 +1,31 @@
-# py-ansi-unicode
-ANSI > Unicode Converter
+# ANSI > UTF-8 Conversion
+
+## Usage
+
+```shell
+usage: ansi-art-convert [-h] --fpath FPATH [--encoding ENCODING] [--sauce-only] [--verbose] [--ice-colours] [--font-name FONT_NAME] [--width WIDTH]
+
+options:
+  -h, --help            show this help message and exit
+  --fpath, -f FPATH     Path to the ANSI file to render.
+  --encoding, -e ENCODING
+                        Specify the file encoding (cp437, iso-8859-1, ascii, utf-8) if the auto-detection was incorrect.
+  --sauce-only, -s      Only output the SAUCE record information as JSON and exit.
+  --verbose, -v         Enable verbose debug output.
+  --ice-colours         Force enabling ICE colours (non-blinking background).
+  --font-name FONT_NAME
+                        Specify the font name to determine glyph offset (overrides SAUCE font).
+  --width, -w WIDTH     Specify the output width (overrides SAUCE tinfo1).
+```
+
+## Documentation
+
+- [SAUCE Metadata](docs/sauce.md)
+
+## Resources
+
+- [The origins of DEL (0x7F) and its Legacy in Amiga ASCII art](https://blog.glyphdrawing.club/the-origins-of-del-0x7f-and-its-legacy-in-amiga-ascii-art/)
+- [rewtnull/amigafonts](https://github.com/rewtnull/amigafonts)
+- [Screwtapello/topaz-unicode](https://gitlab.com/Screwtapello/topaz-unicode)
+- [Rob Hagemans' Hoard of Bitfonts](https://github.com/robhagemans/hoard-of-bitfonts)
+- [amigavision/TopazDouble](https://github.com/amigavision/TopazDouble)
