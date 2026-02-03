@@ -13,7 +13,7 @@ from typing import Iterator, NamedTuple, Tuple, ClassVar
 
 from laser_prynter import pp
 
-from font_data import FONT_DATA, FILE_DATA_TYPES
+from .font_data import FONT_DATA, FILE_DATA_TYPES
 
 DEBUG = False
 def dprint(*args, **kwargs):
