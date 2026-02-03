@@ -22,4 +22,4 @@ jobs:
         -v ${{ github.workspace }}/README.md:/app/README.md
         -v ${{ github.workspace }}/LICENSE:/app/LICENSE
         ghcr.io/tmck-code/py-ansi-art-convert:latest
-          bash -c "python3 -m build --sdist --wheel && twine check dist/*"
+        sh -c "python3 -m build --sdist --wheel && twine check dist/*"
