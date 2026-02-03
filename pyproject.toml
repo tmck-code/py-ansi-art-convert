@@ -15,7 +15,6 @@ keywords = ["ANSI", "ASCII", "art", "conversion", "UTF-8", "terminal"]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Topic :: Multimedia :: Graphics :: Conversion",
     "Topic :: Terminals",
