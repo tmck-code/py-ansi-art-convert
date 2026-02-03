@@ -3,8 +3,29 @@ name = "ansi-art-convert"
 version = "0.1.0"
 description = "ANSI > UTF-8 Conversion"
 readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [
+    {name = "Tom McKeesick", email = "tmck01@gmail.com"},
+]
+maintainers = [
+    {name = "Tom McKeesick", email = "tmck01@gmail.com"},
+]
+keywords = ["ANSI", "ASCII", "art", "conversion", "UTF-8", "terminal"]
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Graphics :: Conversion",
+    "Topic :: Terminals",
+    "Topic :: Utilities",
+]
 requires-python = ">=3.12"
 dependencies = ["laser-prynter"]
+
+[project.urls]
+homepage = "https://github.com/tmck-code/py-ansi-art-convert"
 
 [project.scripts]
 ansi-art-convert = "ansi_art_convert.convert:main"
