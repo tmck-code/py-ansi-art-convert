@@ -33,3 +33,6 @@ homepage = "https://github.com/tmck-code/py-ansi-art-convert"
 
 [project.scripts]
 ansi-art-convert = "ansi_art_convert.convert:main"
+
+[tool.setuptools.packages.find]
+where = ["ansi_art_convert"]
