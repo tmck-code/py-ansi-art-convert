@@ -1,5 +1,21 @@
 # ANSI > UTF-8 Conversion
 
+- [ANSI \> UTF-8 Conversion](#ansi--utf-8-conversion)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Documentation](#documentation)
+  - [Resources](#resources)
+
+---
+
+## Installation
+
+You can install the [`ansi-art-convert`](https://pypi.org/project/ansi-art-convert/) package via pip:
+
+```shell
+pip install ansi-art-convert
+```
+
 ## Usage
 
 ```shell
