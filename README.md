@@ -16,6 +16,27 @@ You can install the [`ansi-art-convert`](https://pypi.org/project/ansi-art-conve
 pip install ansi-art-convert
 ```
 
+> [!IMPORTANT]
+> _As a prerequisite, you will need to install the [`ANSI megafont`](https://github.com/tmck-code/ansi-megafont) on your system via your regular font installer, and ensure that your terminal emulator is configured to use it._
+
+Alternatively, you can install it via a one-liner (you will still need to configure your terminal to use it):
+<details>
+<summary>install commands:</summary>
+
+```shell
+# osx
+curl -sOL --output-dir ~/Library/Fonts/ https://github.com/tmck-code/ansi-megafont/releases/download/v0.1.0/TopazPlusPlus.ttf \
+  && fc-cache -f ~/Library/Fonts/ \
+  && fc-list | grep "TopazPlusPlus"
+
+# linux
+curl -sOL --output-dir ~/.fonts/ https://github.com/tmck-code/ansi-megafont/releases/download/v0.1.0/TopazPlusPlus.ttf \
+  && fc-cache -f ~/.fonts/ \
+  && fc-list | grep "TopazPlusPlus"
+```
+
+</details>
+
 ## Usage
 
 ```shell
