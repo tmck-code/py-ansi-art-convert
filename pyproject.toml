@@ -1,6 +1,6 @@
 [project]
 name = "ansi-art-convert"
-version = "0.1.0"
+version = "0.1.1"
 description = "ANSI > UTF-8 Conversion"
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -34,4 +34,4 @@ homepage = "https://github.com/tmck-code/py-ansi-art-convert"
 ansi-art-convert = "ansi_art_convert.convert:main"
 
 [tool.setuptools.packages.find]
-where = ["ansi_art_convert"]
+where = ["."]
