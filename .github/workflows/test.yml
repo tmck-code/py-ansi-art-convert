@@ -1,0 +1,21 @@
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Log in to the Container registry
+      uses: docker/login-action@v3
+      with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Pull image from ghcr.io
+      run: docker pull ghcr.io/tmck-code/py-ansi-art-convert:latest
+    - name: Build and check package
+      run: docker run --rm \
+        -v ${{ github.workspace }}:/app \
+        ghcr.io/tmck-code/py-ansi-art-convert:latest \
+          bash -c "python3 -m build --sdist --wheel && twine check dist/*"
