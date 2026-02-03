@@ -17,6 +17,9 @@ jobs:
     - name: Build and check package
       run: >
         docker run --rm
-        -v ${{ github.workspace }}:/app
+        -v ${{ github.workspace }}/ansi_art_convert:/app/ansi_art_convert
+        -v ${{ github.workspace }}/pyproject.toml:/app/pyproject.toml
+        -v ${{ github.workspace }}/README.md:/app/README.md
+        -v ${{ github.workspace }}/LICENSE:/app/LICENSE
         ghcr.io/tmck-code/py-ansi-art-convert:latest
           bash -c "python3 -m build --sdist --wheel && twine check dist/*"
