@@ -685,6 +685,35 @@ CP437_BOX_MAP = {
     0xC1: '┐',
     0xB4: '┤',
 }
+CP437_DOUBLE_BOX_MAP = {
+    0xB6, #╢
+    0xB7, #╖
+    0xB8, #╕
+    0xB9, #╣
+    0xBA, #║
+    0xBB, #╗
+    0xBC, #╝
+    0xBD, #╜
+    0xBE, #╛
+    0xC6, #╞
+    0xC7, #╟
+    0xC8, #╚
+    0xC9, #╔
+    0xCA, #╩
+    0xCB, #╦
+    0xCC, #╠
+    0xCD, #═
+    0xCE, #╬
+    0xCF, #╧
+    0xD0, #╨
+    0xD1, #╤
+    0xD2, #╥
+    0xD3, #╙
+    0xD6, #╓
+    0xD7, #╫
+    0xD8, #╪
+}
+
 ISO_8859_1_BOX_MAP = {
     0x7c: '|',
     0x5c: '\\',
@@ -740,7 +769,14 @@ def detect_encoding(fpath: str) -> SupportedEncoding:
 
     cp437_shade_counts, cp437_box_counts, cp437_block_counts = Counter(), Counter(), Counter()
 
-    for bytes, counts in ((CP437_SHADE_BLOCK_MAP, cp437_shade_counts), (CP437_BOX_MAP, cp437_box_counts), (CP437_BLOCK_MAP, cp437_block_counts)):
+    all_counts = (
+        (CP437_SHADE_BLOCK_MAP, cp437_shade_counts),
+        (CP437_BOX_MAP, cp437_box_counts),
+        (CP437_BLOCK_MAP, cp437_block_counts),
+        (CP437_DOUBLE_BOX_MAP, cp437_block_counts)
+    )
+
+    for bytes, counts in all_counts:
         for byte in bytes:
             count = data.count(byte)
             if count > 0:
