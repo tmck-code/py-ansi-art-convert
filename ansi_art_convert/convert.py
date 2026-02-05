@@ -5,14 +5,13 @@ from argparse import ArgumentParser
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import chain, batched
+from itertools import batched
 import os
 import pprint
 import sys
-from typing import Iterator, NamedTuple, Tuple, ClassVar
+from typing import Iterator, NamedTuple, Tuple
 
 from laser_prynter import pp
-
 from ansi_art_convert.font_data import FONT_DATA, FILE_DATA_TYPES, UNICODE_TO_CP437
 
 DEBUG = False
@@ -454,6 +453,19 @@ class UnknownToken(ANSIToken):
             + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
         ])
 
+ASPECT_RATIO_MAP = {
+    (0, 0): 'Legacy value. No preference.',
+    (0, 1): 'Image was created for a legacy device. When displayed on a device with square pixels, either the font or the image needs to be stretched.',
+    (1, 0): 'Image was created for a modern device with square pixels. No stretching is desired on a device with square pixels.',
+    (1, 1): 'Not currently a valid value.'
+}
+LETTER_SPACING_MAP = {
+    (0, 0): 'Legacy value. No preference.',
+    (0, 1): 'Select 8 pixel font.',
+    (1, 0): 'Select 9 pixel font.',
+    (1, 1): 'Not currently a valid value.'
+}
+TINFO_NAMES = ['tinfo1', 'tinfo2', 'tinfo3', 'tinfo4']
 
 @dataclass
 class SauceRecordExtended:
@@ -468,22 +480,6 @@ class SauceRecordExtended:
     letter_spacing: dict = field(init=False, repr=False)
     flags:          dict = field(repr=False, default_factory=dict)
     ice_colours:    bool = field(default=False)
-
-    aspect_ratio_map: ClassVar[dict] = {
-        (0, 0): 'Legacy value. No preference.',
-        (0, 1): 'Image was created for a legacy device. When displayed on a device with square pixels, either the font or the image needs to be stretched.',
-        (1, 0): 'Image was created for a modern device with square pixels. No stretching is desired on a device with square pixels.',
-        (1, 1): 'Not currently a valid value.'
-    }
-    letter_spacing_map: ClassVar[dict] = {
-        (0, 0): 'Legacy value. No preference.',
-        (0, 1): 'Select 8 pixel font.',
-        (1, 0): 'Select 9 pixel font.',
-        (1, 1): 'Not currently a valid value.'
-    }
-    tinfo_names: ClassVar[list[str]] = ['tinfo1', 'tinfo2', 'tinfo3', 'tinfo4']
-    font_map: ClassVar[dict] = FONT_DATA
-    tinfo_map: ClassVar[dict] = FILE_DATA_TYPES
 
     @staticmethod
     def parse_comments(comment_block: str, n_comments: int) -> list[str]:
@@ -505,15 +501,15 @@ class SauceRecordExtended:
         _bit1, _bit2, _bit3, ar1, ar2, ls1, ls2, b = f
 
         return {
-            'aspect_ratio':   SauceRecordExtended.aspect_ratio_map.get((ar1, ar2), 'Unknown'),
-            'letter_spacing': SauceRecordExtended.letter_spacing_map.get((ls1, ls2), 'Unknown'),
+            'aspect_ratio':   ASPECT_RATIO_MAP.get((ar1, ar2), 'Unknown'),
+            'letter_spacing': LETTER_SPACING_MAP.get((ls1, ls2), 'Unknown'),
             'non_blink_mode': bool(b),
         }
 
     @staticmethod
     def parse_font(font_name: str) -> dict:
         dprint(f'Parsing font data for font name: {font_name!r}')
-        return SauceRecordExtended.font_map.get(font_name, {})
+        return FONT_DATA.get(font_name, {})
 
     @staticmethod
     def parse_tinfo_field(tinfo_key: str, sauce: SauceRecord) -> dict:
@@ -521,14 +517,14 @@ class SauceRecordExtended:
             # ('BinaryText', 'Variable'): {'tinfo1': '0', 'tinfo2': '0', 'tinfo3': '0', 'tinfo4': '0' }``
             raise NotImplementedError('SAUCE tinfo parsing for data_type 5 (BinaryText) is not implemented.')
         return {
-            'name':  SauceRecordExtended.tinfo_map.get((sauce.data_type, sauce.file_type), {}).get(tinfo_key, '0'),
+            'name':  FILE_DATA_TYPES.get((sauce.data_type, sauce.file_type), {}).get(tinfo_key, '0'),
             'value': getattr(sauce, tinfo_key),
         }
 
     @staticmethod
     def parse_tinfo(sauce: SauceRecord) -> dict:
         info = {}
-        for name in SauceRecordExtended.tinfo_names:
+        for name in TINFO_NAMES:
             field_info = SauceRecordExtended.parse_tinfo_field(name, sauce)
             if field_info['name'] != '0':
                 info[name] = field_info
