@@ -45,9 +45,9 @@ class ANSIToken:
 @staticmethod
 def get_glyph_offset(font_name: str) -> int:
     if  'topaz' in font_name.lower():
-        if '1+' in font_name:
+        if '1' in font_name:
             offset = 0xE000
-        elif '2+' in font_name:
+        elif '2' in font_name:
             offset = 0xE100
         else:
             raise ValueError(f'Unknown Topaz font_name {font_name!r}')
