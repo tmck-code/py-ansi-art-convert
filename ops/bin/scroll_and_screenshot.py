@@ -123,7 +123,7 @@ def get_border_coords(img: Image.Image, border_colour: tuple[int, int, int]) -> 
             y2 = y_sorted_by_freq[i]
             break
 
-    return x1+1, y1+1, x2, y2
+    return x1+1, y1+2, x2, y2
 
 def crop_border(img: Image.Image, border_colour: tuple[int, int, int]) -> Image.Image:
     x1, y1, x2, y2 = get_border_coords(img, border_colour)
