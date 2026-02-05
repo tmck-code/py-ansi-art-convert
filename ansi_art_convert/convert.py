@@ -5,27 +5,24 @@ from argparse import ArgumentParser
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import chain, batched
+from itertools import batched
 import os
 import pprint
 import sys
-from typing import Iterator, NamedTuple, Tuple, ClassVar
+from typing import Iterator, NamedTuple, Tuple
 
 from laser_prynter import pp
 
+from ansi_art_convert.encoding import detect_encoding, SupportedEncoding
 from ansi_art_convert.font_data import FONT_DATA, FILE_DATA_TYPES, UNICODE_TO_CP437
-
-DEBUG = False
-def dprint(*args, **kwargs):
-    if DEBUG:
-        print(*args, **kwargs, file=sys.stderr)
+from ansi_art_convert.log import dprint, DEBUG
 
 @dataclass
 class ANSIToken:
-    value:     str
-    value_name: str = field(default='')
-    value_map: dict = field(repr=False, default_factory=dict)
-    original_value: str = field(init=False)
+    value:          str
+    value_name:     str  = field(default='')
+    value_map:      dict = field(repr=False, default_factory=dict)
+    original_value: str  = field(init=False)
 
     def __post_init__(self):
         self.original_value = self.value
@@ -454,9 +451,21 @@ class UnknownToken(ANSIToken):
             + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
         ])
 
+ASPECT_RATIO_MAP = {
+    (0, 0): 'Legacy value. No preference.',
+    (0, 1): 'Image was created for a legacy device. When displayed on a device with square pixels, either the font or the image needs to be stretched.',
+    (1, 0): 'Image was created for a modern device with square pixels. No stretching is desired on a device with square pixels.',
+    (1, 1): 'Not currently a valid value.'
+}
+LETTER_SPACING_MAP = {
+    (0, 0): 'Legacy value. No preference.',
+    (0, 1): 'Select 8 pixel font.',
+    (1, 0): 'Select 9 pixel font.',
+    (1, 1): 'Not currently a valid value.'
+}
+TINFO_NAMES = ['tinfo1', 'tinfo2', 'tinfo3', 'tinfo4']
 
-@dataclass
-class SauceRecordExtended:
+class SauceRecordExtended(NamedTuple):
     'extended sauce record with extra fields for interpreted/expanded comments, font & flag descriptions'
     fpath:          str
     encoding:       SupportedEncoding
@@ -468,22 +477,6 @@ class SauceRecordExtended:
     letter_spacing: dict = field(init=False, repr=False)
     flags:          dict = field(repr=False, default_factory=dict)
     ice_colours:    bool = field(default=False)
-
-    aspect_ratio_map: ClassVar[dict] = {
-        (0, 0): 'Legacy value. No preference.',
-        (0, 1): 'Image was created for a legacy device. When displayed on a device with square pixels, either the font or the image needs to be stretched.',
-        (1, 0): 'Image was created for a modern device with square pixels. No stretching is desired on a device with square pixels.',
-        (1, 1): 'Not currently a valid value.'
-    }
-    letter_spacing_map: ClassVar[dict] = {
-        (0, 0): 'Legacy value. No preference.',
-        (0, 1): 'Select 8 pixel font.',
-        (1, 0): 'Select 9 pixel font.',
-        (1, 1): 'Not currently a valid value.'
-    }
-    tinfo_names: ClassVar[list[str]] = ['tinfo1', 'tinfo2', 'tinfo3', 'tinfo4']
-    font_map: ClassVar[dict] = FONT_DATA
-    tinfo_map: ClassVar[dict] = FILE_DATA_TYPES
 
     @staticmethod
     def parse_comments(comment_block: str, n_comments: int) -> list[str]:
@@ -505,15 +498,15 @@ class SauceRecordExtended:
         _bit1, _bit2, _bit3, ar1, ar2, ls1, ls2, b = f
 
         return {
-            'aspect_ratio':   SauceRecordExtended.aspect_ratio_map.get((ar1, ar2), 'Unknown'),
-            'letter_spacing': SauceRecordExtended.letter_spacing_map.get((ls1, ls2), 'Unknown'),
+            'aspect_ratio':   ASPECT_RATIO_MAP.get((ar1, ar2), 'Unknown'),
+            'letter_spacing': LETTER_SPACING_MAP.get((ls1, ls2), 'Unknown'),
             'non_blink_mode': bool(b),
         }
 
     @staticmethod
     def parse_font(font_name: str) -> dict:
         dprint(f'Parsing font data for font name: {font_name!r}')
-        return SauceRecordExtended.font_map.get(font_name, {})
+        return FONT_DATA.get(font_name, {})
 
     @staticmethod
     def parse_tinfo_field(tinfo_key: str, sauce: SauceRecord) -> dict:
@@ -521,14 +514,14 @@ class SauceRecordExtended:
             # ('BinaryText', 'Variable'): {'tinfo1': '0', 'tinfo2': '0', 'tinfo3': '0', 'tinfo4': '0' }``
             raise NotImplementedError('SAUCE tinfo parsing for data_type 5 (BinaryText) is not implemented.')
         return {
-            'name':  SauceRecordExtended.tinfo_map.get((sauce.data_type, sauce.file_type), {}).get(tinfo_key, '0'),
+            'name':  FILE_DATA_TYPES.get((sauce.data_type, sauce.file_type), {}).get(tinfo_key, '0'),
             'value': getattr(sauce, tinfo_key),
         }
 
     @staticmethod
     def parse_tinfo(sauce: SauceRecord) -> dict:
         info = {}
-        for name in SauceRecordExtended.tinfo_names:
+        for name in TINFO_NAMES:
             field_info = SauceRecordExtended.parse_tinfo_field(name, sauce)
             if field_info['name'] != '0':
                 info[name] = field_info
@@ -635,10 +628,7 @@ class SauceRecord(NamedTuple):
             return raw_value.replace(b'\x00', b'').strip().decode(encoding)
 
     @staticmethod
-    def parse_record(file_path: str, encoding) -> Tuple[SauceRecord, str]:
-        with open(file_path, 'rb') as f:
-            file_data = f.read()
-
+    def parse_record(file_data: bytes, encoding) -> Tuple[SauceRecord, str]:
         data, sauce_data = file_data[:-128], file_data[-128:]
 
         if not (sauce_data and sauce_data.startswith(b'SAUCE')):
@@ -651,118 +641,17 @@ class SauceRecord(NamedTuple):
 
         return SauceRecord(*values.values()), data.decode(encoding)
 
-class SupportedEncoding(Enum):
-    CP437      = 'cp437'
-    ISO_8859_1 = 'iso-8859-1'
-    ASCII      = 'ascii'
-    UTF_8      = 'utf-8'
-
-    @staticmethod
-    def from_value(value: str) -> SupportedEncoding:
-        for encoding in SupportedEncoding:
-            if encoding.value == value:
-                return encoding
-        raise ValueError(f'Unsupported encoding: {value}')
-
-# blockChars = [][]byte{[]byte("░"), []byte("▒"), []byte("█"), []byte("▄"), []byte("▐"), []byte("▀")}
-CP437_BLOCK_MAP = {
-    0xB0: '░',
-    0xB1: '▒',
-    0xDB: '█',
-    0xDC: '▄',
-    0xDD: '▐',
-    0xDF: '▀',
-}
-CP437_BOX_MAP = {
-    0xC0: '└',
-    0xD9: '┘',
-    0xC3: '├',
-    0xC2: '┬',
-    0xC1: '┐',
-    0xB4: '┤',
-}
-ISO_8859_1_BOX_MAP = {
-    0x7c: '|',
-    0x5c: '\\',
-    0x2f: '/',
-    0xaf: '¯',
-    0x5f: '_',
-}
-POPULAR_CHAR_MAP = {
-    'Ñ': {SupportedEncoding.CP437: 0xA5, SupportedEncoding.ISO_8859_1: 0xD1},
-}
-ODD_ONES_OUT = [
-    {
-        'points':     1,
-        'points_for': SupportedEncoding.ISO_8859_1,
-        'char':       {0xAF: '¯'},                       # in CP437 this char is: ['»' hex=0xaf]
-        'regulars':   {0x2D: '-', 0x3A: ':', 0x7C: '|'}, # these decode identically in ISO-8859-1 and CP437
-    }
-]
-
-def detect_encoding(fpath: str) -> SupportedEncoding:
-    'Detect file encoding based on presence of CP437 block characters.'
-    with open(fpath, 'rb') as f:
-        data = f.read()
-    points = Counter(list(SupportedEncoding.__members__.values()))
-
-    for char, version in POPULAR_CHAR_MAP.items():
-        for encoding, byt in version.items():
-            count = data.count(byt)
-            if count == 0:
-                continue
-            dprint(f'> [{encoding.value} +1] Detected popular character in file: {(char, encoding.value, count)}')
-            points[encoding] += 1
-
-    for odd_char in ODD_ONES_OUT:
-        for byt, replacement in odd_char['char'].items():
-            count = data.count(byt)
-            if count == 0:
-                break
-
-        counts = []
-        for byt, replacement in odd_char['regulars'].items():
-            count = data.count(byt)
-            if count == 0:
-                continue
-            counts.append((replacement, count))
-        if len(counts) > 1:
-            dprint(f'> [{odd_char["points_for"].value} +{odd_char["points"]}] Detected odd-one-out characters in file: {counts}')
-            points[encoding] += odd_char['points']
-
-    iso_box_counts = Counter()
-    for byte in ISO_8859_1_BOX_MAP.keys():
-        iso_box_counts[byte] = data.count(byte)
-
-    counts = Counter()
-    for byte in (CP437_BOX_MAP | CP437_BLOCK_MAP).keys():
-        count = data.count(byte)
-        if count > 0:
-            counts[byte] = data.count(byte)
-
-    if len(counts) > 1:
-        if counts.total() < iso_box_counts.total():
-            dprint(f'> [ISO +1] Detected more ISO-8859-1 box characters in file than CP437: {iso_box_counts.total()} vs {counts.total()}')
-            points[SupportedEncoding.ISO_8859_1] += 1
-        else:
-            dprint(f'> [CP437 +1] Detected CP437 characters in file: {counts}')
-            points[SupportedEncoding.CP437] += 1
-
-    if DEBUG:
-        pp.ppd({'points': {k.name: v for k,v in points.items()}}, indent=2)
-    return points.most_common(1)[0][0]
-
 
 @dataclass
 class Tokeniser:
     fpath:        str
     sauce:        SauceRecordExtended
     data:         str
+    font_name:    str
     encoding:     SupportedEncoding   = SupportedEncoding.CP437
     tokens:       list[ANSIToken]     = field(default_factory=list, init=False)
-    glyph_offset: int                 = field(init=False, default=0xE000)
+    glyph_offset: int                 = field(init=False, default=0)
     ice_colours:  bool                = field(default=False)
-    font_name:    str                 = field(default='')
     width:        int                 = field(default=0)
     counts:       Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
     _textTokenType: type = field(init=False, repr=False, default=TextToken)
@@ -772,6 +661,9 @@ class Tokeniser:
             self.glyph_offset = get_glyph_offset(self.font_name)
         elif 'name' in self.sauce.font:
             self.glyph_offset = get_glyph_offset(self.sauce.font['name'])
+        else:
+            if self.encoding == SupportedEncoding.CP437:
+                self.glyph_offset = get_glyph_offset('ibm')
 
         if not self.width:
             self.width = int(self.sauce.sauce.tinfo1) or 80
@@ -971,14 +863,18 @@ def main():
     DEBUG = args.pop('verbose')
     pp.enabled = not DEBUG
 
+    # Read file once
+    with open(args['fpath'], 'rb') as f:
+        file_data = f.read()
+
     if args.get('encoding'):
         encoding = SupportedEncoding.from_value(args['encoding'])
     else:
-        encoding = detect_encoding(args['fpath'])
+        encoding = detect_encoding(file_data)
         dprint(f'Detected encoding: {encoding}')
 
     sauce_only = args.pop('sauce_only')
-    sauce_record, data = SauceRecord.parse_record(args['fpath'], encoding.value)
+    sauce_record, data = SauceRecord.parse_record(file_data, encoding.value)
     sauce_extended, data = SauceRecordExtended.parse(sauce_record, data, args['fpath'], encoding)
 
     if sauce_only:
