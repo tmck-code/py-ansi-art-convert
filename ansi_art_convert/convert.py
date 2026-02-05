@@ -665,12 +665,16 @@ class SupportedEncoding(Enum):
         raise ValueError(f'Unsupported encoding: {value}')
 
 # blockChars = [][]byte{[]byte("░"), []byte("▒"), []byte("█"), []byte("▄"), []byte("▐"), []byte("▀")}
-CP437_BLOCK_MAP = {
+CP437_SHADE_BLOCK_MAP = {
     0xB0: '░',
     0xB1: '▒',
+    0xB2: '█',
+}
+CP437_BLOCK_MAP = {
     0xDB: '█',
     0xDC: '▄',
     0xDD: '▐',
+    0xDE: '▌',
     0xDF: '▀',
 }
 CP437_BOX_MAP = {
@@ -734,15 +738,23 @@ def detect_encoding(fpath: str) -> SupportedEncoding:
     for byte in ISO_8859_1_BOX_MAP.keys():
         iso_box_counts[byte] = data.count(byte)
 
-    counts = Counter()
-    for byte in (CP437_BOX_MAP | CP437_BLOCK_MAP).keys():
-        count = data.count(byte)
-        if count > 0:
-            counts[byte] = data.count(byte)
+    cp437_shade_counts, cp437_box_counts, cp437_block_counts = Counter(), Counter(), Counter()
 
-    if len(counts) > 1:
-        if counts.total() < iso_box_counts.total():
-            dprint(f'> [ISO +1] Detected more ISO-8859-1 box characters in file than CP437: {iso_box_counts.total()} vs {counts.total()}')
+    for bytes, counts in ((CP437_SHADE_BLOCK_MAP, cp437_shade_counts), (CP437_BOX_MAP, cp437_box_counts), (CP437_BLOCK_MAP, cp437_block_counts)):
+        for byte in bytes:
+            count = data.count(byte)
+            if count > 0:
+                counts[byte] = data.count(byte)
+
+    for c in (cp437_shade_counts, cp437_box_counts, cp437_block_counts):
+        if c.total() > 0:
+            dprint(f'> [CP437 +1] Detected CP437 characters in file: {c}')
+            points[SupportedEncoding.CP437] += 1
+
+    cp437_all_counts = cp437_shade_counts | cp437_box_counts | cp437_block_counts
+    if len(cp437_all_counts) > 1:
+        if cp437_all_counts.total() < iso_box_counts.total():
+            dprint(f'> [ISO +1] Detected more ISO-8859-1 box characters in file than CP437: {iso_box_counts.total()} vs {cp437_all_counts.total()}')
             points[SupportedEncoding.ISO_8859_1] += 1
         else:
             dprint(f'> [CP437 +1] Detected CP437 characters in file: {counts}')
