@@ -201,6 +201,9 @@ def main(text_file, line_width, output_png):
     for chunk in scroll_file(text_file, line_width):
         os_utils.screenshot()
 
+    # clear the terminal - it's pretty harsh/bright to look at due to the white border
+    print('\033c', end='')
+
     # 2. crop all the screenshots
     fpaths = list(sort_by_mtime(glob.glob("./screenshots/*.png")))
     with tqdm(total=len(fpaths)) as pbar:
