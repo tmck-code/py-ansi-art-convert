@@ -22,6 +22,7 @@ else
     -y \
     -i "$official_png" \
     -vf scale=1440:-2,crop=1440:1980:0:"'(ih-oh)*t/$time'" \
+    -r 60 \
     -t "$time" \
     -c:v libx264 \
     -pix_fmt yuv420p \
@@ -32,6 +33,7 @@ ffpb -loop 1 \
   -y \
   -i demo.png \
   -vf scale=1440:-2,crop=1440:1980:0:"'(ih-oh)*t/$time'" \
+  -r 60 \
   -t "$time" \
   -c:v libx264 \
   -pix_fmt yuv420p \
@@ -43,6 +45,8 @@ ffpb \
   -i "${artwork_basename}.mine.mkv" \
   -filter_complex [0:v][1:v]hstack[v] \
   -map [v] \
+  -r 60 \
   "${artwork_basename}.combined.mp4"
 
 mpv "${artwork_basename}.combined.mp4"
+
