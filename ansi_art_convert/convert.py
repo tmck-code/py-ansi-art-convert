@@ -631,10 +631,7 @@ class SauceRecord(NamedTuple):
             return raw_value.replace(b'\x00', b'').strip().decode(encoding)
 
     @staticmethod
-    def parse_record(file_path: str, encoding) -> Tuple[SauceRecord, str]:
-        with open(file_path, 'rb') as f:
-            file_data = f.read()
-
+    def parse_record(file_data: bytes, encoding) -> Tuple[SauceRecord, str]:
         data, sauce_data = file_data[:-128], file_data[-128:]
 
         if not (sauce_data and sauce_data.startswith(b'SAUCE')):
@@ -729,10 +726,8 @@ ODD_ONES_OUT = [
     }
 ]
 
-def detect_encoding(fpath: str) -> SupportedEncoding:
+def detect_encoding(data: bytes) -> SupportedEncoding:
     'Detect file encoding based on presence of CP437 block characters.'
-    with open(fpath, 'rb') as f:
-        data = f.read()
     points = Counter(list(SupportedEncoding.__members__.values()))
 
     for char, version in POPULAR_CHAR_MAP.items():
@@ -776,7 +771,7 @@ def detect_encoding(fpath: str) -> SupportedEncoding:
         for byte in bytes:
             count = data.count(byte)
             if count > 0:
-                counts[byte] = data.count(byte)
+                counts[byte] = count
 
     for c in (cp437_shade_counts, cp437_box_counts, cp437_block_counts):
         if c.total() > 0:
@@ -1018,14 +1013,18 @@ def main():
     DEBUG = args.pop('verbose')
     pp.enabled = not DEBUG
 
+    # Read file once
+    with open(args['fpath'], 'rb') as f:
+        file_data = f.read()
+
     if args.get('encoding'):
         encoding = SupportedEncoding.from_value(args['encoding'])
     else:
-        encoding = detect_encoding(args['fpath'])
+        encoding = detect_encoding(file_data)
         dprint(f'Detected encoding: {encoding}')
 
     sauce_only = args.pop('sauce_only')
-    sauce_record, data = SauceRecord.parse_record(args['fpath'], encoding.value)
+    sauce_record, data = SauceRecord.parse_record(file_data, encoding.value)
     sauce_extended, data = SauceRecordExtended.parse(sauce_record, data, args['fpath'], encoding)
 
     if sauce_only:
