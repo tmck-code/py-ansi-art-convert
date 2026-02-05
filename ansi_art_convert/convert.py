@@ -467,8 +467,7 @@ LETTER_SPACING_MAP = {
 }
 TINFO_NAMES = ['tinfo1', 'tinfo2', 'tinfo3', 'tinfo4']
 
-@dataclass
-class SauceRecordExtended:
+class SauceRecordExtended(NamedTuple):
     'extended sauce record with extra fields for interpreted/expanded comments, font & flag descriptions'
     fpath:          str
     encoding:       SupportedEncoding
