@@ -806,11 +806,11 @@ class Tokeniser:
     fpath:        str
     sauce:        SauceRecordExtended
     data:         str
+    font_name:    str
     encoding:     SupportedEncoding   = SupportedEncoding.CP437
     tokens:       list[ANSIToken]     = field(default_factory=list, init=False)
-    glyph_offset: int                 = field(init=False, default=0xE000)
+    glyph_offset: int                 = field(init=False, default=0)
     ice_colours:  bool                = field(default=False)
-    font_name:    str                 = field(default='')
     width:        int                 = field(default=0)
     counts:       Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
     _textTokenType: type = field(init=False, repr=False, default=TextToken)
@@ -820,6 +820,9 @@ class Tokeniser:
             self.glyph_offset = get_glyph_offset(self.font_name)
         elif 'name' in self.sauce.font:
             self.glyph_offset = get_glyph_offset(self.sauce.font['name'])
+        else:
+            if self.encoding == SupportedEncoding.CP437:
+                self.glyph_offset = get_glyph_offset('ibm')
 
         if not self.width:
             self.width = int(self.sauce.sauce.tinfo1) or 80
