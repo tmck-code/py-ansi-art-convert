@@ -176,9 +176,10 @@ class ControlToken(ANSIToken):
     subtype: str = field(init=False)
 
     def __post_init__(self):
+        self.original_value = self.value
         self.subtype = self.value[-1]
-        self.value_name = self.value_map.get(self.subtype, '')
-        super().__post_init__()
+        self.value_name = ANSI_CONTROL_CODES.get(self.subtype, '')
+        self.value = self.value[2:]
 
     def repr(self):
         lines = (
@@ -186,6 +187,8 @@ class ControlToken(ANSIToken):
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             + '{title:<10s} {value!r}'.format(title='subtype:', value=self.subtype)
+            + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
+
         )
         if self.subtype == 'C':
             lines += '  {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
@@ -509,7 +512,7 @@ class Tokeniser:
             return [Color8Token(value=';'.join(params), params=params, ice_colours=self.ice_colours)]
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
-            return [ControlToken(value=''.join(code_chars[2:]))]
+            return [ControlToken(value=''.join(code_chars))]
 
         return [UnknownToken(value=''.join(code_chars))]
 
