@@ -581,6 +581,7 @@ class Renderer:
         newLine = [NewLineToken(value='\n')]
 
         for t in self.tokeniser.tokenise():
+            dprint(f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}')
             if isinstance(t, ControlToken) and t.subtype in ('H', 's'):
                 newLine = []
 
@@ -608,19 +609,28 @@ class Renderer:
                 self._currLine.append(t)
                 self._currBG = t
 
+            elif self.tokeniser.sauce.has_cursor_up and isinstance(t, ControlToken) and t.subtype in ('A', 'C'):
+                dprint(f'Cursor movement token with sauce cursor_up: {t!r}, current line length: {self._currLength}, width: {self.width}')
+                continue
+
             elif isinstance(t, (TextToken, CP437Token, ControlToken)):
+                dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
                 if self._currLength + len(str(t)) == self.width:
+                    dprint(f'Exact fit for token: {t!r}, yielding line with reset and newline')
                     yield self._currLine + [t, SGRToken(value='0')] + newLine
                     self._currLine, self._currLength = [], 0
                     self._add_current_colors()
                     continue
 
                 if self._currLength + len(str(t)) < self.width:
+                    dprint(f'Adding token to current line: {t!r}, new line length would be: {self._currLength + len(str(t))}')
                     self._currLine.append(t)
                     self._currLength += len(str(t))
                     continue
 
+                dprint(f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}')
                 for chunk in self.split_text_token(str(t), self.width - self._currLength):
+                    dprint(f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}')
                     self._currLine.append(chunk)
                     self._currLength += len(str(chunk))
 
@@ -633,12 +643,21 @@ class Renderer:
                     elif self._currLength > self.width:
                         raise ValueError(f'Logic error in line splitting, {self._currLength} > {self.width}')
 
+            elif isinstance(t, C0Token):
+                dprint(f'C0 Newline token: {t!r}, current line length: {self._currLength}, width: {self.width}')
+                if t.value_name == 'CR':
+                    continue
+
             elif isinstance(t, NewLineToken):
+                dprint(f'NewLineToken: current line length: {self._currLength}, width: {self.width}')
+                if self.tokeniser.sauce.has_cursor_up and len(self._currLine) < self.width:
+                    continue
                 yield self._currLine + [SGRToken(value='0')] + newLine
                 self._currLine, self._currLength = [], 0
                 self._add_current_colors()
 
             else:
+                dprint(f'Other token: {t!r}')
                 self._currLine.append(t)
                 if isinstance(t, SGRToken):
                     if t.value_name == 'Reset':
