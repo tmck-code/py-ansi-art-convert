@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# ./ops/bin/make_comparison_video.sh \
+#   <file-to-compare.ansi> <official-render.png> <width> <duration_seconds>
 
 set -euo pipefail
 
