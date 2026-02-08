@@ -13,7 +13,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
     - name: Pull images from ghcr.io
-      run:
+      run: |
         docker pull ghcr.io/tmck-code/py-ansi-art-convert:latest
         docker pull ghcr.io/tmck-code/py-ansi-art-convert:dev
     - name: Build and check package
