@@ -42,8 +42,10 @@ where = ["."]
 disallow_untyped_defs = true # no functions without type annotations
 warn_return_any = true       # warn about functions that return Any
 
-[tool.ruff.lint]
+[tool.ruff]
 exclude = ["ops/"]
+
+[tool.ruff.lint]
 fixable = ["ALL"]
 
 [tool.ruff.format]
