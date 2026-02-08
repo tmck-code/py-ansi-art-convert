@@ -12,8 +12,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project
 
-COPY ansi_art_convert LICENSE README.md /app/
-COPY pyproject.toml uv.lock /app/
+COPY ansi_art_convert /app/ansi_art_convert
+COPY LICENSE README.md pyproject.toml uv.lock /app/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
@@ -31,6 +31,7 @@ FROM python:3.12-alpine AS prod
 
 RUN addgroup -S nonroot \
  && adduser -S -G nonroot nonroot
+
 COPY --from=builder --chown=nonroot:nonroot /app /app
 
 ENV PATH="/app/.venv/bin:$PATH"
