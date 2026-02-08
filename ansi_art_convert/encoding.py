@@ -44,7 +44,7 @@ ISO_8859_1_BOX_MAP = (
 POPULAR_CHAR_MAP = {
     'Ñ': {SupportedEncoding.CP437: 0xA5, SupportedEncoding.ISO_8859_1: 0xD1},
 }
-ODD_ONES_OUT = [
+ODD_ONES_OUT: list[dict] = [
     {
         'points':     1,
         'points_for': SupportedEncoding.ISO_8859_1,
@@ -71,21 +71,23 @@ def detect_encoding(data: bytes) -> SupportedEncoding:
             if count == 0:
                 break
 
-        counts = []
+        odd_counts = []
         for byt, replacement in odd_char['regulars'].items():
             count = data.count(byt)
             if count == 0:
                 continue
-            counts.append((replacement, count))
-        if len(counts) > 1:
-            dprint(f'> [{odd_char["points_for"].value} +{odd_char["points"]}] Detected odd-one-out characters in file: {counts}')
+            odd_counts.append((replacement, count))
+        if len(odd_counts) > 1:
+            dprint(f'> [{odd_char["points_for"].value} +{odd_char["points"]}] Detected odd-one-out characters in file: {odd_counts}')
             points[encoding] += odd_char['points']
 
-    iso_box_counts = Counter()
+    iso_box_counts: Counter[int] = Counter()
     for byte in ISO_8859_1_BOX_MAP:
         iso_box_counts[byte] = data.count(byte)
 
-    cp437_shade_counts, cp437_box_counts, cp437_block_counts = Counter(), Counter(), Counter()
+    cp437_shade_counts: Counter[int] = Counter()
+    cp437_box_counts: Counter[int] = Counter()
+    cp437_block_counts: Counter[int] = Counter()
 
     all_counts = (
         (CP437_SHADE_BLOCK_MAP, cp437_shade_counts),

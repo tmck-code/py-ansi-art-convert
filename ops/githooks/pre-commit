@@ -1,0 +1,6 @@
+#!/bin/bash
+
+fpaths=$(git diff --name-only --cached --diff-filter=ACM | grep '.py') || exit 0
+
+mypy "$fpaths"
+ruff check "$fpaths"
