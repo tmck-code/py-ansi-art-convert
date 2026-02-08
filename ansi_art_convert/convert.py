@@ -478,7 +478,7 @@ class Tokeniser:
             self.width = int(self.sauce.sauce.tinfo1) or 80
 
         if not self.ice_colours:
-            self.ice_colours = self.sauce.flags['non_blink_mode']
+            self.ice_colours = self.sauce.non_blink_mode
 
         if self.encoding == SupportedEncoding.CP437:
             self._textTokenType = CP437Token
