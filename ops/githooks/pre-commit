@@ -1,6 +1,8 @@
 #!/bin/bash
 
-fpaths=$(git diff --name-only --cached --diff-filter=ACM | grep '.py') || exit 0
+set -euo pipefail
 
-mypy "$fpaths"
-ruff check "$fpaths"
+fpaths=$(git diff --name-only --cached --diff-filter=ACM | grep '.py' | tr '\n' ' ') || exit 0
+
+mypy $fpaths
+ruff check $fpaths
