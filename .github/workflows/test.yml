@@ -19,7 +19,7 @@ jobs:
     - name: Build and check package
       run: >
         docker run --rm
-        --pull
+        --pull missing
         -u root
         -v ${{ github.workspace }}/ansi_art_convert/:/app/ansi_art_convert/
         -v ${{ github.workspace }}/pyproject.toml:/app/pyproject.toml
@@ -34,7 +34,7 @@ jobs:
     - name: Style check with ruff
       run: >
         docker run --rm
-        --pull
+        --pull missing
         -u root
         -v ${{ github.workspace }}/ansi_art_convert/:/app/ansi_art_convert/
         -v ${{ github.workspace }}/pyproject.toml:/app/pyproject.toml
@@ -47,7 +47,7 @@ jobs:
     - name: Type check with mypy
       run: >
         docker run --rm
-        --pull
+        --pull missing
         -u root
         -v ${{ github.workspace }}/ansi_art_convert/:/app/ansi_art_convert/
         -v ${{ github.workspace }}/pyproject.toml:/app/pyproject.toml
