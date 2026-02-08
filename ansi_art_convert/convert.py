@@ -685,7 +685,7 @@ class Renderer:
     def iter_lines(self) -> Iterator[str]:
         for i, line in enumerate(self.gen_lines()):
             if DEBUG:
-                print(f'\n\x1b[30;103m[{i}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
+                print(f'\n\x1b[30;103m[{i+1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
             yield ''.join(map(str, line))
 
     def render(self) -> str:
