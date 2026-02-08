@@ -1,18 +1,8 @@
 on: [push]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Log in to the Container registry
-      uses: docker/login-action@v3
-      with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
   package:
     runs-on: ubuntu-latest
-    needs: build
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -29,7 +19,6 @@ jobs:
         sh -c "python3 -m build --sdist --wheel && twine check dist/*"
   lint:
     runs-on: ubuntu-latest
-    needs: build
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -44,7 +33,6 @@ jobs:
         ruff check
   typecheck:
     runs-on: ubuntu-latest
-    needs: build
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
