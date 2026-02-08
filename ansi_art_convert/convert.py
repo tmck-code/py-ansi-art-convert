@@ -172,6 +172,7 @@ ANSI_CONTROL_CODES = {
 class ControlToken(ANSIToken):
     value_map: dict = field(repr=False, default_factory=lambda: ANSI_CONTROL_CODES)
     subtype: str = field(init=False)
+    cursor_moved_up: bool = False
 
     def __post_init__(self) -> None:
         self.original_value = self.value
@@ -188,13 +189,16 @@ class ControlToken(ANSIToken):
             + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
 
         )
-        if self.subtype == 'C':
+        if self.subtype == 'C' and not self.cursor_moved_up:
             lines += '  {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         return lines
 
     def __str__(self) -> str:
         if self.subtype == 'C':
-            return ' '*int(self.value[:-1] or '1')
+            if self.cursor_moved_up:
+                return ''
+            else:
+                return ' '*int(self.value[:-1] or '1')
         elif self.subtype == 'H':
             return '\n'
         else:
@@ -471,6 +475,7 @@ class Tokeniser:
     width:        int                 = field(default=0)
     counts:       Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
     _textTokenType: type = field(init=False, repr=False, default=TextToken)
+    _cursor_up:   bool = False
 
     def __post_init__(self) -> None:
         if self.font_name:
@@ -516,7 +521,13 @@ class Tokeniser:
             return [Color8Token(value=';'.join(params), params=params, ice_colours=self.ice_colours)]
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
-            return [ControlToken(value=''.join(code_chars))]
+            t = ControlToken(value=''.join(code_chars))
+            if t.subtype == 'A':
+                self._cursor_up = True
+            elif t.subtype == 'C' and self._cursor_up:
+                t.cursor_moved_up = True
+                self._cursor_up = False
+            return [t]
 
         return [UnknownToken(value=''.join(code_chars))]
 
@@ -616,10 +627,6 @@ class Renderer:
             elif isinstance(t, TrueColorBGToken):
                 self._currLine.append(t)
                 self._currBG = t
-
-            elif self.tokeniser.sauce.has_cursor_up and isinstance(t, ControlToken) and t.subtype in ('A', 'C'):
-                dprint(f'Cursor movement token with sauce cursor_up: {t!r}, current line length: {self._currLength}, width: {self.width}')
-                continue
 
             elif isinstance(t, (TextToken, CP437Token, ControlToken)):
                 dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
