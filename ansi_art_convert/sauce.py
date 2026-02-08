@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import NamedTuple, Tuple
+from typing import Any, NamedTuple, Tuple
 from itertools import batched
 
 from ansi_art_convert.log import dprint
@@ -156,7 +156,7 @@ class SauceRecord(NamedTuple):
     tinfo_s:   str = '' # + 22b = 128b
 
     @staticmethod
-    def offsets():
+    def offsets() -> dict[str, Tuple[int, int]]:
         return {
             'ID':        (0, 5),
             'version':   (5, 7),
@@ -180,7 +180,7 @@ class SauceRecord(NamedTuple):
         return self.ID != 'SAUCE'
 
     @staticmethod
-    def parse_field(key: str, raw_value: bytes, encoding: str):
+    def parse_field(key: str, raw_value: bytes, encoding: str) -> str | int:
         if key in {'data_type', 'file_type', 'comments', 'filesize', 'tinfo1', 'tinfo2', 'tinfo3', 'tinfo4', 'flags'}:
             dprint(f'Parsing {key} field with raw value: {raw_value!r}')
             return int.from_bytes(raw_value.rstrip(b'\x00'), byteorder='little', signed=False)
@@ -189,15 +189,15 @@ class SauceRecord(NamedTuple):
             return raw_value.replace(b'\x00', b'').strip().decode(encoding)
 
     @staticmethod
-    def parse_record(file_data: bytes, encoding) -> Tuple[SauceRecord, str]:
+    def parse_record(file_data: bytes, encoding: str) -> Tuple[SauceRecord, str]:
         data, sauce_data = file_data[:-128], file_data[-128:]
 
         if not (sauce_data and sauce_data.startswith(b'SAUCE')):
             dprint(f'No SAUCE record found: {sauce_data[:5]!r}')
             return SauceRecord(), file_data.decode(encoding)
 
-        values = {}
+        values: dict[str, Any] = {}
         for key, (start, end) in SauceRecord.offsets().items():
             values[key] = SauceRecord.parse_field(key, sauce_data[start:end], encoding)
 
-        return SauceRecord(*values.values()), data.decode(encoding)
+        return SauceRecord(**values), data.decode(encoding)
