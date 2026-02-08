@@ -40,8 +40,11 @@ WORKDIR /app
 
 FROM python:3.12-alpine AS dev
 
-RUN addgroup -S nonroot \
- && adduser -S -G nonroot nonroot
+ARG UID
+ARG GID
+
+RUN addgroup -S -g $GID nonroot \
+ && adduser -S -G nonroot -u $UID nonroot
 COPY --from=builder-dev --chown=nonroot:nonroot /app /app
 
 ENV PATH="/app/.venv/bin:$PATH"
