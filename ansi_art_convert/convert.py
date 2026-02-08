@@ -568,9 +568,12 @@ class Renderer:
 
     def _add_current_colors(self):
         'Re-add current FG/BG colors to the current line.'
-        if self._currSGR: self._currLine.append(self._currSGR)
-        if self._currFG:  self._currLine.append(self._currFG)
-        if self._currBG:  self._currLine.append(self._currBG)
+        if self._currSGR:
+            self._currLine.append(self._currSGR)
+        if self._currFG:
+            self._currLine.append(self._currFG)
+        if self._currBG:
+            self._currLine.append(self._currBG)
 
     def gen_lines(self) -> Iterator[list[ANSIToken]]:
         'Split tokens into lines at width, or each newline char'
