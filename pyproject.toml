@@ -43,8 +43,7 @@ disallow_untyped_defs = true # no functions without type annotations
 warn_return_any = true       # warn about functions that return Any
 
 [tool.ruff]
-exclude = ["ops/"]
-
+exclude = ["ops/", ".venv/"]
 [tool.ruff.lint]
 fixable = ["ALL"]
 
