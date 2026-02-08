@@ -29,13 +29,18 @@ docker/build-dev:
 		-f ops/Dockerfile \
 		--target dev \
 		.
+FIX_ARG ?=
+
+ifeq ($(FIX), 1)
+	FIX_ARG := --fix
+endif
 
 lint:
 	docker run --rm -it \
 		-v $(PWD)/ansi_art_convert:/app/ansi_art_convert \
 		-v $(PWD)/pyproject.toml:/app/pyproject.toml \
 		py-ansi-art-convert:dev \
-		ruff check /app/ansi_art_convert
+		ruff check $(value FIX_ARG)
 
 typecheck:
 	docker run --rm -it \
