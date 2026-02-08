@@ -13,7 +13,7 @@ from typing import Iterator, List
 from laser_prynter import pp
 
 from ansi_art_convert.encoding import detect_encoding, SupportedEncoding
-from ansi_art_convert.font_data import UNICODE_TO_CP437
+from ansi_art_convert.font_data import UNICODE_TO_CP437_TRANS
 from ansi_art_convert.log import dprint, DEBUG
 from ansi_art_convert.sauce import SauceRecordExtended, SauceRecord
 
@@ -112,32 +112,17 @@ class C0Token(TextToken):
             + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
         ])
 
-CP_437_MAP = {
-    0x01: '☺', 0x02: '☻', 0x03: '♥', 0x04: '♦', 0x05: '♣', 0x06: '♠', 0x07: '•', 0x08: '◘',
-    0x09: '○', 0x0A: '◙', 0x0B: '♂', 0x0C: '♀', 0x0D: '♪', 0x0E: '♫', 0x0F: '☼', 0x10: '►',
-    0x11: '◄', 0x12: '↕', 0x13: '‼', 0x14: '¶', 0x15: '§', 0x16: '▬', 0x17: '↨', 0x18: '↑',
-    0x19: '↓', 0x1A: '→', 0x1B: '←', 0x1C: '∟', 0x1D: '↔', 0x1E: '▲', 0x1F: '▼',
-}
-
-
 @dataclass
 class CP437Token(ANSIToken):
     offset: int = 0xE100
     hex_values: list[str] = field(default_factory=list, repr=False)
-
-    def _translate_char(self, ch: str) -> str:
-        n = UNICODE_TO_CP437.get(ord(ch), ord(ch))
-        if n <= 255:
-            return chr(n + self.offset)
-        else:
-            return ch
 
     def __post_init__(self) -> None:
         super().__post_init__()
         if DEBUG:
             for v in self.original_value:
                 self.hex_values.append(str(hex(ord(v))))
-        self.value = ''.join([self._translate_char(v) for v in self.original_value])
+        self.value = self.original_value.translate(UNICODE_TO_CP437_TRANS)
         self.value_name = self.value_map.get(self.original_value, '')
 
     def repr(self) -> str:

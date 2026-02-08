@@ -444,3 +444,4 @@ UNICODE_TO_CP437 = {
     0x25a0: 0xfe,  # BLACK SQUARE
     0xa0:   0xff,  # NO-BREAK SPACE
 }
+UNICODE_TO_CP437_TRANS = str.maketrans(UNICODE_TO_CP437)
