@@ -6,6 +6,9 @@ __pycache__/
 # vscode
 .vscode/
 
+# data files
+tmp/
+
 # C extensions
 *.so
 
