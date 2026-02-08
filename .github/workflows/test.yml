@@ -4,8 +4,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
     - name: Log in to the Container registry
       uses: docker/login-action@v3
       with:
@@ -16,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
     - name: Build and check package
       run: >
         docker run --rm
@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
     - name: Style check with ruff
       run: >
         docker run --rm
@@ -44,6 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
     - name: Type check with mypy
       run: >
         docker run --rm
