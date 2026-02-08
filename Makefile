@@ -22,7 +22,7 @@ pypi/upload:
 docker/build:
 	docker build \
 		--platform $(ARCHITECTURE) \
-		-t py-ansi-art-convert:latest \
+		-t ghcr.io/tmck-code/py-ansi-art-convert:latest \
 		-f ops/Dockerfile \
 		--target prod \
 		.
@@ -32,7 +32,7 @@ docker/build-dev:
 		--platform $(ARCHITECTURE) \
 		--build-arg UID=$(shell id -u) \
 		--build-arg GID=$(shell id -g) \
-		-t py-ansi-art-convert:dev \
+		-t ghcr.io/tmck-code/py-ansi-art-convert:dev \
 		-f ops/Dockerfile \
 		--target dev \
 		.
@@ -42,7 +42,7 @@ lint:
 		-v $(PWD)/ansi_art_convert:/app/ansi_art_convert \
 		-v $(PWD)/pyproject.toml:/app/pyproject.toml \
 		-u $(shell id -u):$(shell id -g) \
-		py-ansi-art-convert:dev \
+		ghcr.io/tmck-code/py-ansi-art-convert:dev \
 		ruff check $(value FIX_ARG)
 
 typecheck:
@@ -50,7 +50,7 @@ typecheck:
 		-v $(PWD)/ansi_art_convert:/app/ansi_art_convert \
 		-v $(PWD)/pyproject.toml:/app/pyproject.toml \
 		-v $(PWD)/uv.lock:/app/uv.lock \
-		py-ansi-art-convert:dev \
+		ghcr.io/tmck-code/py-ansi-art-convert:dev \
 		mypy -p ansi_art_convert
 
 docker/shell:
@@ -58,7 +58,7 @@ docker/shell:
 		-v $(PWD)/ansi_art_convert:/app/ansi_art_convert \
 		-v $(PWD)/pyproject.toml:/app/pyproject.toml \
 		-v $(PWD)/uv.lock:/app/uv.lock \
-		py-ansi-art-convert:dev \
+		ghcr.io/tmck-code/py-ansi-art-convert:dev \
 		sh
 
 .PHONY: pypi/build pypi/upload
