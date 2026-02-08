@@ -1,4 +1,9 @@
 ARCHITECTURE ?= "linux/amd64"
+FIX_ARG ?=
+
+ifeq ($(FIX), 1)
+	FIX_ARG := --fix
+endif
 
 uv/update:
 	docker run -it --rm \
@@ -25,20 +30,18 @@ docker/build:
 docker/build-dev:
 	docker build \
 		--platform $(ARCHITECTURE) \
+		--build-arg UID=$(shell id -u) \
+		--build-arg GID=$(shell id -g) \
 		-t py-ansi-art-convert:dev \
 		-f ops/Dockerfile \
 		--target dev \
 		.
-FIX_ARG ?=
-
-ifeq ($(FIX), 1)
-	FIX_ARG := --fix
-endif
 
 lint:
 	docker run --rm -it \
 		-v $(PWD)/ansi_art_convert:/app/ansi_art_convert \
 		-v $(PWD)/pyproject.toml:/app/pyproject.toml \
+		-u $(shell id -u):$(shell id -g) \
 		py-ansi-art-convert:dev \
 		ruff check $(value FIX_ARG)
 
