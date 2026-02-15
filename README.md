@@ -1,5 +1,8 @@
 # ANSI > UTF-8 Conversion
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/tmck-code/py-ansi-art-convert/test.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/ansi-art-convert)
+
 A tool to convert original ANSI art files for viewing in a modern terminal.
 
 - [ANSI \> UTF-8 Conversion](#ansi--utf-8-conversion)
