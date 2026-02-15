@@ -3,7 +3,10 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/tmck-code/py-ansi-art-convert/test.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/ansi-art-convert)
 
-A tool to convert original ANSI art files for viewing in a modern terminal.
+A tool to convert original ANSI art files for viewing in a modern terminal.   
+
+> [!IMPORTANT]
+> _This is **not** an AI-generated project. I wrote this myself, and I test it extensively against original artwork._
 
 - [ANSI \> UTF-8 Conversion](#ansi--utf-8-conversion)
   - [Installation](#installation)
