@@ -1,5 +1,7 @@
 # ANSI > UTF-8 Conversion
 
+A tool to convert original ANSI art files for viewing in a modern terminal.
+
 - [ANSI \> UTF-8 Conversion](#ansi--utf-8-conversion)
   - [Installation](#installation)
   - [Usage](#usage)
