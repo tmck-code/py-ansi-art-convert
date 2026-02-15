@@ -5,6 +5,7 @@
 
 A tool to convert original ANSI art files for viewing in a modern terminal.   
 
+- [Demos](#demos)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Documentation](#documentation)
@@ -14,6 +15,13 @@ A tool to convert original ANSI art files for viewing in a modern terminal.
 > _This is **not** an AI-generated project. I wrote this myself, and I test it extensively against original artwork._
 
 ---
+
+## Demos
+
+I made some videos of demo conversions that are on youtube:
+
+- Demo ANSI Conversion | g80-impure: https://www.youtube.com/watch?v=ZBk6FdzMkck
+- Demo ANSI conversion | goto80-goto20: https://www.youtube.com/watch?v=Phbriy19yCY
 
 ## Installation
 
