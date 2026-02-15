@@ -5,14 +5,13 @@
 
 A tool to convert original ANSI art files for viewing in a modern terminal.   
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [Resources](#resources)
+
 > [!IMPORTANT]
 > _This is **not** an AI-generated project. I wrote this myself, and I test it extensively against original artwork._
-
-- [ANSI \> UTF-8 Conversion](#ansi--utf-8-conversion)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Documentation](#documentation)
-  - [Resources](#resources)
 
 ---
 
