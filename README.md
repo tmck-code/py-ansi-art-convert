@@ -1,4 +1,4 @@
-# ANSI > UTF-8 Conversion
+# ANSI Art Converter
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/tmck-code/py-ansi-art-convert/test.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/ansi-art-convert)
