@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import batched
+from itertools import batched, pairwise, chain
 import pprint
 import sys
 from typing import Iterator, List
@@ -450,6 +450,10 @@ class UnknownToken(ANSIToken):
         ])
 
 @dataclass
+class EndOfFile(ANSIToken):
+    value: str = ''
+
+@dataclass
 class Tokeniser:
     fpath:        str
     sauce:        SauceRecordExtended
@@ -568,9 +572,9 @@ class Renderer:
     def __post_init__(self) -> None:
         self.width = self.tokeniser.width
 
-    def split_text_token(self, s: str, remainder: int) -> Iterator[TextToken]:
+    def split_text_token(self, s: str, remainder: int, cls: type[ANSIToken] = TextToken) -> Iterator[ANSIToken]:
         for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
-            yield TextToken(value=chunk)
+            yield cls(value=chunk)
 
     def _add_current_colors(self) -> None:
         'Re-add current FG/BG colors to the current line.'
@@ -586,7 +590,7 @@ class Renderer:
 
         newLine: list[ANSIToken] = [NewLineToken(value='\n')]
 
-        for t in self.tokeniser.tokenise():
+        for t, tNext in pairwise(chain(self.tokeniser.tokenise(), [EndOfFile()])):
             dprint(f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}')
             if isinstance(t, ControlToken) and t.subtype in ('H', 's'):
                 newLine = []
@@ -631,7 +635,7 @@ class Renderer:
                     continue
 
                 dprint(f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}')
-                for chunk in self.split_text_token(str(t), self.width - self._currLength):
+                for chunk in self.split_text_token(str(t), self.width - self._currLength, cls=type(t)):
                     dprint(f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}')
                     self._currLine.append(chunk)
                     self._currLength += len(str(chunk))
@@ -652,7 +656,7 @@ class Renderer:
 
             elif isinstance(t, NewLineToken):
                 dprint(f'NewLineToken: current line length: {self._currLength}, width: {self.width}')
-                if self.tokeniser.sauce.has_cursor_up and len(self._currLine) < self.width:
+                if (isinstance(tNext, ControlToken) and tNext.value_name == 'CursorUp') and len(self._currLine) < self.width:
                     continue
                 yield self._currLine + [SGRToken(value='0')] + newLine
                 self._currLine, self._currLength = [], 0
