@@ -12,7 +12,7 @@ A tool to convert original ANSI art files for viewing in a modern terminal.
 - [Resources](#resources)
 
 > [!IMPORTANT]
-> _This is **not** an AI-generated project. I wrote this myself, and I test it extensively against original artwork._
+> _This is **not** an AI-generated project! I wrote this as a labor of love. I test it extensively against original artwork._
 
 ---
 
