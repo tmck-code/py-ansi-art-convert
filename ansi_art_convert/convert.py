@@ -589,8 +589,12 @@ class Renderer:
         'Split tokens into lines at width, or each newline char'
 
         newLine: list[ANSIToken] = [NewLineToken(value='\n')]
+        skips = 0
 
         for t, tNext in pairwise(chain(self.tokeniser.tokenise(), [EndOfFile()])):
+            if skips > 0:
+                skips -= 1
+                continue
             dprint(f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}')
             if isinstance(t, ControlToken) and t.subtype in ('H', 's'):
                 newLine = []
@@ -618,6 +622,9 @@ class Renderer:
             elif isinstance(t, TrueColorBGToken):
                 self._currLine.append(t)
                 self._currBG = t
+
+            elif isinstance(t, ControlToken) and t.subtype == 'A' and isinstance(tNext, C0Token) and tNext.value_name == 'CR':
+                skips = 2
 
             elif isinstance(t, (TextToken, CP437Token, ControlToken)):
                 dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
