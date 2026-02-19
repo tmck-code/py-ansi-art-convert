@@ -1,0 +1,55 @@
+[font]
+size = 9.0
+builtin_box_drawing = false
+
+[font.offset]
+x = 0
+y = 0
+
+[font.normal]
+family = "ANSI Combined"
+style = "Regular"
+
+[font.bold]
+family = "ANSI Combined"
+style = "Regular"
+
+[font.bold_italic]
+family = "ANSI Combined"
+style = "Regular"
+
+[font.italic]
+family = "ANSI Combined"
+style = "Regular"
+
+# Colors via ansilove
+# https://github.com/ansilove/libansilove/blob/6dcdce334ef9748c2b0fc6d423b40b49f1c2beb4/src/config.h#L28-L41
+[colors]
+draw_bold_text_with_bright_colors = true
+
+# Default colors
+[colors.primary]
+background = '#000000'
+foreground = '#a4a4a4'
+
+# Normal colors
+[colors.normal]
+black   = '#000000'
+red     = '#aa0000'
+green   = '#00aa00'
+yellow  = '#aa5500'
+blue    = '#0000aa'
+magenta = '#aa00aa'
+cyan    = '#00aaaa'
+white   = '#aaaaaa'
+
+# Bright colors
+[colors.bright]
+black   = '#555555'
+red     = '#ff5555'
+green   = '#55ff55'
+yellow  = '#ffff55'
+blue    = '#5555ff'
+magenta = '#ff55ff'
+cyan    = '#55ffff'
+white   = '#ffffff'
