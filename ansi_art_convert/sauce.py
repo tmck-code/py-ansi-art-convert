@@ -33,6 +33,7 @@ class SauceRecordExtended(NamedTuple):
     letter_spacing: str
     non_blink_mode: bool
     ice_colours:    bool
+    has_cursor_up:  bool
 
     @staticmethod
     def parse_comments(comment_block: str, n_comments: int) -> list[str]:
@@ -89,6 +90,7 @@ class SauceRecordExtended(NamedTuple):
         font = SauceRecordExtended.parse_font(sauce.tinfo_s.strip())
         tinfo = SauceRecordExtended.parse_tinfo(sauce)
         ice_colours = flags.get('non_blink_mode', False)
+        has_cursor_up = '\x1b[A' in file_data
 
         kwargs = {
             'fpath':         fpath,
@@ -99,6 +101,7 @@ class SauceRecordExtended(NamedTuple):
             'font':          font,
             'tinfo':         tinfo,
             'ice_colours':   ice_colours,
+            'has_cursor_up': has_cursor_up,
         }
         if sauce.comments == 0:
             dprint('No comments present in SAUCE record.')
