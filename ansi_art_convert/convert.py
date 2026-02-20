@@ -159,7 +159,6 @@ ANSI_CONTROL_CODES = {
 class ControlToken(ANSIToken):
     value_map: dict = field(repr=False, default_factory=lambda: ANSI_CONTROL_CODES)
     subtype: str = field(init=False)
-    cursor_moved_up: bool = False
 
     def __post_init__(self) -> None:
         self.original_value = self.value
@@ -174,18 +173,13 @@ class ControlToken(ANSIToken):
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             + '{title:<10s} {value!r}'.format(title='subtype:', value=self.subtype)
             + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
-
+            + ' {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         )
-        if self.subtype == 'C' and not self.cursor_moved_up:
-            lines += '  {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         return lines
 
     def __str__(self) -> str:
         if self.subtype == 'C':
-            if self.cursor_moved_up:
-                return ''
-            else:
-                return ' '*int(self.value[:-1] or '1')
+            return ' '*int(self.value[:-1] or '1')
         elif self.subtype == 'H':
             return '\n'
         else:
@@ -466,7 +460,6 @@ class Tokeniser:
     width:        int                 = field(default=0)
     counts:       Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
     _textTokenType: type = field(init=False, repr=False, default=TextToken)
-    _cursor_up:   bool = False
 
     def __post_init__(self) -> None:
         if self.font_name:
@@ -513,11 +506,6 @@ class Tokeniser:
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
             t = ControlToken(value=''.join(code_chars))
-            if t.subtype == 'A':
-                self._cursor_up = True
-            elif t.subtype == 'C' and self._cursor_up:
-                t.cursor_moved_up = True
-                self._cursor_up = False
             return [t]
 
         return [UnknownToken(value=''.join(code_chars))]
@@ -623,8 +611,11 @@ class Renderer:
                 self._currLine.append(t)
                 self._currBG = t
 
-            elif isinstance(t, ControlToken) and t.subtype == 'A' and isinstance(tNext, C0Token) and tNext.value_name == 'CR':
-                skips = 2
+            elif isinstance(t, ControlToken) and t.subtype == 'A':
+                if isinstance(tNext, C0Token) and tNext.value_name == 'CR':
+                    skips = 2
+                elif isinstance(tNext, ControlToken) and tNext.value_name == 'CursorForward':
+                    skips = 1
 
             elif isinstance(t, (TextToken, CP437Token, ControlToken)):
                 dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
