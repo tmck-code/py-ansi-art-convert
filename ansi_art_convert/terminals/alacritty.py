@@ -1,9 +1,15 @@
 from __future__ import annotations
 from dataclasses import dataclass
+import os
 import subprocess
 import tomlkit
+from importlib.resources import files
 
-CONFIG_FPATH = 'ansi_art_convert/terminals/configs/alacritty.toml'
+def get_config_path() -> str:
+    'Path to the alacritty.toml config file in the package resources.'
+    return str(files('ansi_art_convert.terminals.configs').joinpath('alacritty.toml'))
+
+CONFIG_FPATH = get_config_path()
 
 FONT_OFFSETS = {
     'Amiga Topaz 1':      {},
@@ -14,7 +20,7 @@ FONT_OFFSETS = {
     'Amiga MicroKnight+': {},
     'Amiga mOsOul':       {},
     'Amiga P0T-NOoDLE':   {},
-    'IBM VGA':            {'x': -3},
+    'IBM VGA':            {'x': -2},
 }
 
 @dataclass
@@ -28,9 +34,15 @@ class AlacrittyClient:
     def launch(self) -> None:
         with open(CONFIG_FPATH, 'w') as f:
             f.write(tomlkit.dumps(self.config))
-        print(['alacritty', '--config-file', CONFIG_FPATH])
 
-        subprocess.run(['alacritty', '--config-file', CONFIG_FPATH])
+        env = os.environ.copy()
+        env['ALACRITTY_CONFIG'] = CONFIG_FPATH
+
+        subprocess.run(['alacritty', '--config-file', CONFIG_FPATH, '-v'], env=env)
+
+    @staticmethod
+    def session_is_custom_alacritty() -> bool:
+        return os.environ.get('ALACRITTY_CONFIG', '') == CONFIG_FPATH
 
     def with_font(self, font_name: str) -> AlacrittyClient:
         offset = FONT_OFFSETS.get(font_name, {})

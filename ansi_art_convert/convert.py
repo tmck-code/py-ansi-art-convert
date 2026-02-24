@@ -658,6 +658,8 @@ def parse_args() -> dict:
     group = parser.add_mutually_exclusive_group(required=True)
 
     group.add_argument('--fpath',      '-f', type=str,                               help='Path to the ANSI file to render.')
+    group.add_argument('--launch-alacritty', action='store_true', default=False,     help='Launch the rendered output in Alacritty.')
+
     parser.add_argument('--encoding',   '-e', type=str,                              help='Specify the file encoding (cp437, iso-8859-1, ascii, utf-8) if the auto-detection was incorrect.')
     parser.add_argument('--sauce-only', '-s', action='store_true', default=False,    help='Only output the SAUCE record information as JSON and exit.')
     parser.add_argument('--verbose',    '-v', action='store_true', default=False,    help='Enable verbose debug output.')
@@ -665,7 +667,6 @@ def parse_args() -> dict:
     parser.add_argument('--font-name',  '-F', type=str, choices=FONT_ALIASES.keys(), help='Specify the font name to determine glyph offset (overrides SAUCE font).')
     parser.add_argument('--width',      '-w', type=int,                              help='Specify the output width (overrides SAUCE tinfo1).')
 
-    group.add_argument('--launch-alacritty', action='store_true', default=False, help='Launch the rendered output in Alacritty.')
 
     return parser.parse_args().__dict__
 
@@ -705,7 +706,8 @@ def main() -> None:
     r = Renderer(fpath=args['fpath'], tokeniser=t)
     dprint('\nRendered string:')
     try:
-        AlacrittyClient().with_font(t.font_name).update_config()
+        if AlacrittyClient.session_is_custom_alacritty():
+            AlacrittyClient().with_font(t.font_name).update_config()
         print(r.render(), end='')
     except BrokenPipeError as e:
         dprint(f'BrokenPipeError: {e}')
