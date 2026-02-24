@@ -32,7 +32,7 @@ class AlacrittyClient:
 
         subprocess.run(['alacritty', '--config-file', CONFIG_FPATH])
 
-    def with_font_settings(self, font_name: str) -> AlacrittyClient:
+    def with_font(self, font_name: str) -> AlacrittyClient:
         offset = FONT_OFFSETS.get(font_name, {})
         offset_x, offset_y = offset.get('x', 0), offset.get('y', 0)
 
@@ -40,6 +40,6 @@ class AlacrittyClient:
 
         return self
 
-    def update_font_settings(self) -> None:
+    def update_config(self) -> None:
         with open(CONFIG_FPATH, 'w') as f:
             f.write(tomlkit.dumps(self.config))
