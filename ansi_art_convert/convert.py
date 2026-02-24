@@ -463,6 +463,7 @@ class Tokeniser:
             self.glyph_offset = get_glyph_offset(self.font_name)
         elif 'name' in self.sauce.font:
             self.glyph_offset = get_glyph_offset(self.sauce.font['name'])
+            self.font_name = self.sauce.font['name']
         else:
             if self.encoding == SupportedEncoding.CP437:
                 self.glyph_offset = get_glyph_offset('IBM VGA')
