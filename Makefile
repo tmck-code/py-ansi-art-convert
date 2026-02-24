@@ -12,12 +12,17 @@ uv/update:
 		ghcr.io/astral-sh/uv:bookworm-slim \
 		bash -c "apt update && apt install -y --no-install-recommends git && cd /code && uv sync -U"
 
-pypi/build:
-	python3 -m build --sdist --wheel
-	twine check dist/*
+pypi/clean:
+	rm -rfv build/ dist/ *.egg-info
 
-pypi/upload:
-	twine upload dist/*
+pypi/build: pypi/clean
+	uv build
+
+pypi/publish:
+	tree dist/
+	@echo -e "\e[93mPress [Enter] to continue uploading to PyPI...\e[0m"
+	@read
+	uv publish
 
 docker/build:
 	docker build \
@@ -61,5 +66,5 @@ docker/shell:
 		ghcr.io/tmck-code/py-ansi-art-convert:dev \
 		sh
 
-.PHONY: pypi/build pypi/upload
+.PHONY: pypi/clean pypi/build pypi/publish
 .PHONY: docker/build docker/build-dev lint typecheck uv/update docker/shell

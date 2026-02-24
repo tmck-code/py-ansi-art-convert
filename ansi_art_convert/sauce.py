@@ -4,7 +4,7 @@ from itertools import batched
 
 from ansi_art_convert.log import dprint
 from ansi_art_convert.encoding import SupportedEncoding
-from ansi_art_convert.font_data import FONT_DATA, FILE_DATA_TYPES
+from ansi_art_convert.font_data import FILE_DATA_TYPES, FONT_DATA
 import os
 
 ASPECT_RATIO_MAP = {

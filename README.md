@@ -1,12 +1,27 @@
-# ANSI > UTF-8 Conversion
+# ANSI Art Converter
 
-- [ANSI \> UTF-8 Conversion](#ansi--utf-8-conversion)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Documentation](#documentation)
-  - [Resources](#resources)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/tmck-code/py-ansi-art-convert/test.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/ansi-art-convert)
+
+A tool to convert original ANSI art files for viewing in a modern terminal.   
+
+- [Demos](#demos)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [Resources](#resources)
+
+> [!IMPORTANT]
+> _This is **not** an AI-generated project! I wrote this as a labor of love. I test it extensively against original artwork._
 
 ---
+
+## Demos
+
+I made some videos of demo conversions that are on youtube:
+
+- Demo ANSI Conversion | g80-impure: https://www.youtube.com/watch?v=ZBk6FdzMkck
+- Demo ANSI conversion | goto80-goto20: https://www.youtube.com/watch?v=Phbriy19yCY
 
 ## Installation
 

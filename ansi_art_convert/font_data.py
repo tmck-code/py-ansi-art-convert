@@ -208,6 +208,47 @@ FONT_DATA = {
     }
 }
 
+FONT_OFFSETS = {
+    'Amiga Topaz 1':      0xE000,
+    'Amiga Topaz 1+':     0xE100,
+    'Amiga Topaz 2':      0xE200,
+    'Amiga Topaz 2+':     0xE300,
+    'Amiga MicroKnight':  0xE400,
+    'Amiga MicroKnight+': 0xE500,
+    'Amiga mOsOul':       0xE600,
+    'Amiga P0T-NOoDLE':   0xE700,
+    # TODO: implement all IBM fonts
+    'IBM VGA':            0xE800,
+    'IBM VGA (8px)':      0xE800,
+    'IBM VGA50':          0xE800,
+    'IBM VGA50 (8px)':    0xE800,
+    'IBM VGA25G':         0xE800,
+    'IBM EGA':            0xE800,
+    'IBM EGA43':          0xE800,
+    'IBM VGA ###':        0xE800,
+    'IBM VGA50 ###':      0xE800,
+    'IBM VGA25G ###':     0xE800,
+    'IBM EGA ###':        0xE800,
+    'IBM EGA43 ###':      0xE800,
+    # TODO: support these fonts
+    # 'C64 PETSCII unshifted'
+    # 'C64 PETSCII shifted'
+    # 'Atari ATASCII'
+}
+
+FONT_ALIASES = {
+    'topaz 1':      'Amiga Topaz 1',
+    'topaz 1+':     'Amiga Topaz 1+',
+    'topaz 2':      'Amiga Topaz 2',
+    'topaz 2+':     'Amiga Topaz 2+',
+    'microknight':  'Amiga MicroKnight',
+    'microknight+': 'Amiga MicroKnight+',
+    'mosoul':       'Amiga mOsOul',
+    'potnoodle':    'Amiga P0T-NOoDLE',
+    'ibm vga':      'IBM VGA',
+
+}
+
 FILE_DATA_TYPES = {
     (1, 0): {
         "name": "ASCII",
