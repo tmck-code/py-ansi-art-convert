@@ -1,6 +1,6 @@
 [project]
 name = "ansi-art-convert"
-version = "0.1.4"
+version = "0.2.0"
 description = "ANSI > UTF-8 Conversion"
 readme = "README.md"
 license = "BSD-3-Clause"
