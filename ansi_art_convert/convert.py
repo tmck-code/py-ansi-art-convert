@@ -16,6 +16,7 @@ from ansi_art_convert.encoding import detect_encoding, SupportedEncoding
 from ansi_art_convert.font_data import FONT_ALIASES, FONT_OFFSETS, UNICODE_TO_CP437
 from ansi_art_convert.log import dprint, DEBUG
 from ansi_art_convert.sauce import SauceRecordExtended, SauceRecord
+from ansi_art_convert.terminals.alacritty import AlacrittyClient
 
 @dataclass
 class ANSIToken:
@@ -466,6 +467,7 @@ class Tokeniser:
             self.glyph_offset = get_glyph_offset(self.font_name)
         elif 'name' in self.sauce.font:
             self.glyph_offset = get_glyph_offset(self.sauce.font['name'])
+            self.font_name = self.sauce.font['name']
         else:
             if self.encoding == SupportedEncoding.CP437:
                 self.glyph_offset = get_glyph_offset('IBM VGA')
@@ -683,17 +685,28 @@ class Renderer:
 
 def parse_args() -> dict:
     parser = ArgumentParser()
-    parser.add_argument('--fpath',      '-f', type=str, required=True,               help='Path to the ANSI file to render.')
+    group = parser.add_mutually_exclusive_group(required=True)
+
+    group.add_argument('--fpath',      '-f', type=str,                               help='Path to the ANSI file to render.')
+    group.add_argument('--launch-alacritty', action='store_true', default=False,     help='Launch the rendered output in Alacritty.')
+
     parser.add_argument('--encoding',   '-e', type=str,                              help='Specify the file encoding (cp437, iso-8859-1, ascii, utf-8) if the auto-detection was incorrect.')
     parser.add_argument('--sauce-only', '-s', action='store_true', default=False,    help='Only output the SAUCE record information as JSON and exit.')
     parser.add_argument('--verbose',    '-v', action='store_true', default=False,    help='Enable verbose debug output.')
     parser.add_argument('--ice-colours',      action='store_true', default=False,    help='Force enabling ICE colours (non-blinking background).')
     parser.add_argument('--font-name',  '-F', type=str, choices=FONT_ALIASES.keys(), help='Specify the font name to determine glyph offset (overrides SAUCE font).')
     parser.add_argument('--width',      '-w', type=int,                              help='Specify the output width (overrides SAUCE tinfo1).')
+
+
     return parser.parse_args().__dict__
 
 def main() -> None:
     args = parse_args()
+    if args['launch_alacritty']:
+        AlacrittyClient().launch()
+    else:
+        args.pop('launch_alacritty')
+
     if 'font_name' in args and args['font_name']:
         args['font_name'] = FONT_ALIASES[args['font_name']]
     global DEBUG
@@ -723,6 +736,8 @@ def main() -> None:
     r = Renderer(fpath=args['fpath'], tokeniser=t)
     dprint('\nRendered string:')
     try:
+        if AlacrittyClient.session_is_custom_alacritty():
+            AlacrittyClient().with_font(t.font_name).update_config()
         print(r.render(), end='')
     except BrokenPipeError as e:
         dprint(f'BrokenPipeError: {e}')

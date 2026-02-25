@@ -1,6 +1,6 @@
 [project]
 name = "ansi-art-convert"
-version = "0.1.4"
+version = "0.2.0"
 description = "ANSI > UTF-8 Conversion"
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -20,7 +20,10 @@ classifiers = [
     "Topic :: Utilities",
 ]
 requires-python = ">=3.12"
-dependencies = ["laser-prynter"]
+dependencies = [
+    "laser-prynter",
+    "tomlkit",
+]
 [dependency-groups]
 dev = [
     "build",
@@ -37,6 +40,9 @@ ansi-art-convert = "ansi_art_convert.convert:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.setuptools.package-data]
+ansi_art_convert = ["terminals/configs/*.toml"]
 
 [tool.mypy]
 disallow_untyped_defs = true # no functions without type annotations
