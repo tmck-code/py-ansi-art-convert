@@ -236,6 +236,18 @@ FONT_OFFSETS = {
     # 'Atari ATASCII'
 }
 
+FONT_OFFSET_TRANS = {
+    0xE000: str.maketrans(dict(zip(range(255), range(0xE000, 0xE000+256)))),
+    0xE100: str.maketrans(dict(zip(range(255), range(0xE100, 0xE100+256)))),
+    0xE200: str.maketrans(dict(zip(range(255), range(0xE200, 0xE200+256)))),
+    0xE300: str.maketrans(dict(zip(range(255), range(0xE300, 0xE300+256)))),
+    0xE400: str.maketrans(dict(zip(range(255), range(0xE400, 0xE400+256)))),
+    0xE500: str.maketrans(dict(zip(range(255), range(0xE500, 0xE500+256)))),
+    0xE600: str.maketrans(dict(zip(range(255), range(0xE600, 0xE600+256)))),
+    0xE700: str.maketrans(dict(zip(range(255), range(0xE700, 0xE700+256)))),
+    0xE800: str.maketrans(dict(zip(range(255), range(0xE800, 0xE800+256)))),
+}
+
 FONT_ALIASES = {
     'topaz 1':      'Amiga Topaz 1',
     'topaz 1+':     'Amiga Topaz 1+',

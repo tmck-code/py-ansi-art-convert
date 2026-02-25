@@ -13,7 +13,7 @@ from typing import Iterator, List
 from laser_prynter import pp
 
 from ansi_art_convert.encoding import detect_encoding, SupportedEncoding
-from ansi_art_convert.font_data import FONT_ALIASES, FONT_OFFSETS, UNICODE_TO_CP437_TRANS
+from ansi_art_convert.font_data import FONT_ALIASES, FONT_OFFSETS, UNICODE_TO_CP437_TRANS, FONT_OFFSET_TRANS
 from ansi_art_convert.log import dprint, DEBUG
 from ansi_art_convert.sauce import SauceRecordExtended, SauceRecord
 from ansi_art_convert.terminals.alacritty import AlacrittyClient
@@ -56,15 +56,7 @@ class TextToken(ANSIToken):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        new_values = []
-        for v in self.value:
-            if DEBUG:
-                self.hex_values.append(str(hex(ord(v))))
-            if ord(v) <= 255: # and not (0x21 <= ord(v) <= 0x7e):
-                new_values.append(chr(ord(v)+self.offset))
-            else:
-                new_values.append(v)
-        self.value = ''.join(new_values)
+        self.value = str.translate(self.value, FONT_OFFSET_TRANS.get(self.offset, {}))
 
     def repr(self) -> str:
         return '\n'.join([
@@ -332,7 +324,7 @@ class Color8Token(ANSIToken):
         for t in self.tokens:
             lines.append('\n'.join(['  ' + line for line in t.repr().split('\n')]))
         return '\n'.join(lines)
-    
+
 @dataclass
 class Color8FGToken(ColorFGToken):
     value_map: dict = field(repr=False, default_factory=lambda: COLOUR_8_FG_VALUES)
