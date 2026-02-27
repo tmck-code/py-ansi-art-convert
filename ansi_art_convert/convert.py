@@ -42,7 +42,7 @@ class ANSIToken:
 def get_glyph_offset(font_name: str) -> int:
     if font_name in FONT_OFFSETS:
         offset = FONT_OFFSETS[font_name]
-        print(f'font_name: {font_name!r} -> offset: {hex(offset)}')
+        dprint(f'font_name: {font_name!r} -> offset: {hex(offset)}')
         return offset
     else:
         raise ValueError(f'Unknown font_name: {font_name!r}')
@@ -174,7 +174,7 @@ class ControlToken(ANSIToken):
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             + '{title:<10s} {value!r}'.format(title='subtype:', value=self.subtype)
             + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
-            + ' {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
+            # + ' {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         )
         return lines
 
