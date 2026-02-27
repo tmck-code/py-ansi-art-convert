@@ -26,10 +26,12 @@ dependencies = [
 ]
 [dependency-groups]
 dev = [
-    "build",
-    "twine",
-    "ruff",
     "mypy",
+    "ruff",
+]
+
+test = [
+    "pytest",
 ]
 
 [project.urls]
