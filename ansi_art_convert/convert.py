@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import batched
+from itertools import batched, pairwise, chain
 import pprint
 import sys
 from typing import Iterator, List
@@ -39,11 +39,10 @@ class ANSIToken:
     def __str__(self) -> str:
         return self.value
 
-
 def get_glyph_offset(font_name: str) -> int:
     if font_name in FONT_OFFSETS:
         offset = FONT_OFFSETS[font_name]
-        print(f'font_name: {font_name!r} -> offset: {hex(offset)}')
+        dprint(f'font_name: {font_name!r} -> offset: {hex(offset)}')
         return offset
     else:
         raise ValueError(f'Unknown font_name: {font_name!r}')
@@ -163,9 +162,10 @@ class ControlToken(ANSIToken):
     subtype: str = field(init=False)
 
     def __post_init__(self) -> None:
+        self.original_value = self.value
         self.subtype = self.value[-1]
-        self.value_name = self.value_map.get(self.subtype, '')
-        super().__post_init__()
+        self.value_name = ANSI_CONTROL_CODES.get(self.subtype, '')
+        self.value = self.value[2:]
 
     def repr(self) -> str:
         lines = (
@@ -173,9 +173,9 @@ class ControlToken(ANSIToken):
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             + '{title:<10s} {value!r}'.format(title='subtype:', value=self.subtype)
+            + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
+            # + ' {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         )
-        if self.subtype == 'C':
-            lines += '  {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         return lines
 
     def __str__(self) -> str:
@@ -445,6 +445,10 @@ class UnknownToken(ANSIToken):
         ])
 
 @dataclass
+class EndOfFile(ANSIToken):
+    value: str = ''
+
+@dataclass
 class Tokeniser:
     fpath:        str
     sauce:        SauceRecordExtended
@@ -503,7 +507,8 @@ class Tokeniser:
             return [Color8Token(value=';'.join(params), params=params, ice_colours=self.ice_colours)]
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
-            return [ControlToken(value=''.join(code_chars[2:]))]
+            t = ControlToken(value=''.join(code_chars))
+            return [t]
 
         return [UnknownToken(value=''.join(code_chars))]
 
@@ -557,9 +562,9 @@ class Renderer:
     def __post_init__(self) -> None:
         self.width = self.tokeniser.width
 
-    def split_text_token(self, s: str, remainder: int) -> Iterator[TextToken]:
+    def split_text_token(self, s: str, remainder: int, cls: type[ANSIToken] = TextToken) -> Iterator[ANSIToken]:
         for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
-            yield TextToken(value=chunk)
+            yield cls(value=chunk)
 
     def _add_current_colors(self) -> None:
         'Re-add current FG/BG colors to the current line.'
@@ -574,8 +579,13 @@ class Renderer:
         'Split tokens into lines at width, or each newline char'
 
         newLine: list[ANSIToken] = [NewLineToken(value='\n')]
+        skips = 0
 
-        for t in self.tokeniser.tokenise():
+        for t, tNext in pairwise(chain(self.tokeniser.tokenise(), [EndOfFile()])):
+            if skips > 0:
+                skips -= 1
+                continue
+            dprint(f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}')
             if isinstance(t, ControlToken) and t.subtype in ('H', 's'):
                 newLine = []
 
@@ -603,19 +613,30 @@ class Renderer:
                 self._currLine.append(t)
                 self._currBG = t
 
+            elif isinstance(t, ControlToken) and t.subtype == 'A':
+                if isinstance(tNext, C0Token) and tNext.value_name == 'CR':
+                    skips = 2
+                elif isinstance(tNext, ControlToken) and tNext.value_name == 'CursorForward':
+                    skips = 1
+
             elif isinstance(t, (TextToken, CP437Token, ControlToken)):
+                dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
                 if self._currLength + len(str(t)) == self.width:
+                    dprint(f'Exact fit for token: {t!r}, yielding line with reset and newline')
                     yield self._currLine + [t, SGRToken(value='0')] + newLine
                     self._currLine, self._currLength = [], 0
                     self._add_current_colors()
                     continue
 
                 if self._currLength + len(str(t)) < self.width:
+                    dprint(f'Adding token to current line: {t!r}, new line length would be: {self._currLength + len(str(t))}')
                     self._currLine.append(t)
                     self._currLength += len(str(t))
                     continue
 
-                for chunk in self.split_text_token(str(t), self.width - self._currLength):
+                dprint(f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}')
+                for chunk in self.split_text_token(str(t), self.width - self._currLength, cls=type(t)):
+                    dprint(f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}')
                     self._currLine.append(chunk)
                     self._currLength += len(str(chunk))
 
@@ -628,12 +649,21 @@ class Renderer:
                     elif self._currLength > self.width:
                         raise ValueError(f'Logic error in line splitting, {self._currLength} > {self.width}')
 
+            elif isinstance(t, C0Token):
+                dprint(f'C0 Newline token: {t!r}, current line length: {self._currLength}, width: {self.width}')
+                if t.value_name == 'CR':
+                    continue
+
             elif isinstance(t, NewLineToken):
+                dprint(f'NewLineToken: current line length: {self._currLength}, width: {self.width}')
+                if (isinstance(tNext, ControlToken) and tNext.value_name == 'CursorUp') and len(self._currLine) < self.width:
+                    continue
                 yield self._currLine + [SGRToken(value='0')] + newLine
                 self._currLine, self._currLength = [], 0
                 self._add_current_colors()
 
             else:
+                dprint(f'Other token: {t!r}')
                 self._currLine.append(t)
                 if isinstance(t, SGRToken):
                     if t.value_name == 'Reset':
@@ -646,7 +676,7 @@ class Renderer:
     def iter_lines(self) -> Iterator[str]:
         for i, line in enumerate(self.gen_lines()):
             if DEBUG:
-                print(f'\n\x1b[30;103m[{i}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
+                print(f'\n\x1b[30;103m[{i+1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
             yield ''.join(map(str, line))
 
     def render(self) -> str:
