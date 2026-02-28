@@ -27,12 +27,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy",
+    "pytest",
     "ruff",
     "uv",
-]
-
-test = [
-    "pytest",
 ]
 
 [project.urls]

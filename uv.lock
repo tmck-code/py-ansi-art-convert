@@ -14,11 +14,9 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "mypy" },
+    { name = "pytest" },
     { name = "ruff" },
     { name = "uv" },
-]
-test = [
-    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -30,10 +28,10 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy" },
+    { name = "pytest" },
     { name = "ruff" },
     { name = "uv" },
 ]
-test = [{ name = "pytest" }]
 
 [[package]]
 name = "colorama"
