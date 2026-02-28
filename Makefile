@@ -61,6 +61,7 @@ typecheck:
 docker/shell:
 	docker run --rm -it \
 		-v $(PWD)/ansi_art_convert:/app/ansi_art_convert \
+		-v $(PWD)/test:/app/test \
 		-v $(PWD)/pyproject.toml:/app/pyproject.toml \
 		-v $(PWD)/uv.lock:/app/uv.lock \
 		ghcr.io/tmck-code/py-ansi-art-convert:dev \
