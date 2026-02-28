@@ -53,8 +53,10 @@ ignore_missing_imports = true # ignore imports that can't be resolved (e.g., thi
 
 [tool.ruff]
 exclude = ["ops/", ".venv/"]
+
 [tool.ruff.lint]
 fixable = ["ALL"]
 
 [tool.ruff.format]
-quote-style = "single"
+quote-style = "preserve" # keep existing quote style (single or double)
+
