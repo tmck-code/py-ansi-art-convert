@@ -28,6 +28,7 @@ dependencies = [
 dev = [
     "mypy",
     "ruff",
+    "uv",
 ]
 
 test = [

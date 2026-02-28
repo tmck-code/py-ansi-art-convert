@@ -25,7 +25,7 @@ ENV UV_NO_DEV=0
 
 WORKDIR /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --only-dev
+    uv sync --locked --group dev
 
 FROM python:3.12-alpine AS prod
 
