@@ -32,13 +32,11 @@ class ANSIToken:
         self.value_name = self.value_map.get(self.value, '')
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[37m{self.__class__.__name__:<20}\x1b[0m'
-                + '  {title:<s} {value!r:<4}'.format(title='value:', value=self.value)
-                + '  {title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[37m{self.__class__.__name__:<20}\x1b[0m'
+            + '  {title:<s} {value!r:<4}'.format(title='value:', value=self.value)
+            + '  {title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+        ])
 
     def __str__(self) -> str:
         return self.value
@@ -68,14 +66,12 @@ class TextToken(ANSIToken):
         self.value = ''.join(new_values)
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
-                '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
+            '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
+            '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
+            '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
+        ])
 
 
 C0_TOKEN_NAMES = {
@@ -125,15 +121,13 @@ class C0Token(TextToken):
             self.value = ''
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[33m{self.__class__.__name__:<20}\x1b[0m'
-                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-                + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
-                + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[33m{self.__class__.__name__:<20}\x1b[0m'
+            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
+            + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
+        ])
 
 
 CP_437_MAP = {
@@ -187,14 +181,12 @@ class CP437Token(ANSIToken):
         self.value = ''.join([self._translate_char(v) for v in self.original_value])
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
-                '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
+            '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
+            '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
+            '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
+        ])
 
 
 ANSI_CONTROL_CODES = {
@@ -271,13 +263,11 @@ class TrueColorFGToken(ColorFGToken):
         return f'\x1b[38;2;{r};{g};{b}m'
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m',
+            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
+        ])
 
 
 @dataclass
@@ -289,13 +279,11 @@ class TrueColorBGToken(ColorBGToken):
         return f'\x1b[48;2;{r};{g};{b}m'
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m',
+            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
+        ])
 
 
 @dataclass
@@ -307,13 +295,11 @@ class Color256FGToken(ColorFGToken):
         return f'\x1b[38;5;{n}m'
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[34m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[34m{self.__class__.__name__:<20}\x1b[0m',
+            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
+        ])
 
 
 @dataclass
@@ -325,13 +311,11 @@ class Color256BGToken(ColorBGToken):
         return f'\x1b[48;5;{n}m'
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[36m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[36m{self.__class__.__name__:<20}\x1b[0m',
+            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
+        ])
 
 
 COLOUR_8_FG_VALUES = {
@@ -469,14 +453,12 @@ class Color8FGToken(ColorFGToken):
                 self.value = str(base_value + 60)
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m'
-                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-                + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m'
+            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
+        ])
 
     def __str__(self) -> str:
         return f'\x1b[{self.value}m'
@@ -495,15 +477,13 @@ class Color8BGToken(ColorBGToken):
             self.value = str(int(self.value) + 60)
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m'
-                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-                + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
-                + '{title:<12s} {value!r}'.format(title='ice_colours:', value=self.ice_colours)
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m'
+            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
+            + '{title:<12s} {value!r}'.format(title='ice_colours:', value=self.ice_colours)
+        ])
 
     def __str__(self) -> str:
         return f'\x1b[{self.value}m'
@@ -531,13 +511,11 @@ class SGRToken(ANSIToken):
         return f'\x1b[{self.value}m'
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[95m{self.__class__.__name__:<20}\x1b[0m'
-                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[95m{self.__class__.__name__:<20}\x1b[0m'
+            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+        ])
 
 
 @dataclass
@@ -546,12 +524,10 @@ class NewLineToken(ANSIToken):
         return '\n'
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m'
-                + '{title:<s} {value!r}'.format(title='value:', value=self.value),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m'
+            + '{title:<s} {value!r}'.format(title='value:', value=self.value),
+        ])
 
 
 @dataclass
@@ -560,23 +536,19 @@ class EOFToken(ANSIToken):
         return ''
 
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m'
-                + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m'
+            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+        ])
 
 
 @dataclass
 class UnknownToken(ANSIToken):
     def repr(self) -> str:
-        return '\n'.join(
-            [
-                f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m'
-                + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-            ]
-        )
+        return '\n'.join([
+            f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m'
+            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+        ])
 
 
 @dataclass
