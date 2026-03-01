@@ -36,9 +36,7 @@ class ANSIToken:
             [
                 f'\x1b[37m{self.__class__.__name__:<20}\x1b[0m'
                 + '  {title:<s} {value!r:<4}'.format(title='value:', value=self.value)
-                + '  {title:<10s} {value!r:<8}'.format(
-                    title='value_name:', value=self.value_name
-                )
+                + '  {title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             ]
         )
 
@@ -73,9 +71,7 @@ class TextToken(ANSIToken):
         return '\n'.join(
             [
                 f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<17s} {value!r}'.format(
-                    title='original:', value=self.original_value
-                ),
+                '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
                 '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
                 '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
             ]
@@ -133,12 +129,8 @@ class C0Token(TextToken):
             [
                 f'\x1b[33m{self.__class__.__name__:<20}\x1b[0m'
                 + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(
-                    title='value_name:', value=self.value_name
-                )
-                + '{title:<10s} {value!r:<6}'.format(
-                    title='original:', value=self.original_value
-                )
+                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+                + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
                 + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
             ]
         )
@@ -198,9 +190,7 @@ class CP437Token(ANSIToken):
         return '\n'.join(
             [
                 f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-                '  {title:<17s} {value!r}'.format(
-                    title='original:', value=self.original_value
-                ),
+                '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
                 '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
                 '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
             ]
@@ -241,13 +231,9 @@ class ControlToken(ANSIToken):
         lines = (
             f'\x1b[35m{self.__class__.__name__:<20}\x1b[0m'
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-            + '{title:<10s} {value!r:<8}'.format(
-                title='value_name:', value=self.value_name
-            )
+            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             + '{title:<10s} {value!r}'.format(title='subtype:', value=self.subtype)
-            + '{title:<10s} {value!r}'.format(
-                title='original:', value=self.original_value
-            )
+            + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
             # + ' {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         )
         return lines
@@ -289,9 +275,7 @@ class TrueColorFGToken(ColorFGToken):
             [
                 f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m',
                 '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(
-                    title='colour_type:', value=self.colour_type.value
-                ),
+                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
             ]
         )
 
@@ -309,9 +293,7 @@ class TrueColorBGToken(ColorBGToken):
             [
                 f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m',
                 '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(
-                    title='colour_type:', value=self.colour_type.value
-                ),
+                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
             ]
         )
 
@@ -329,9 +311,7 @@ class Color256FGToken(ColorFGToken):
             [
                 f'\x1b[34m{self.__class__.__name__:<20}\x1b[0m',
                 '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(
-                    title='colour_type:', value=self.colour_type.value
-                ),
+                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
             ]
         )
 
@@ -349,9 +329,7 @@ class Color256BGToken(ColorBGToken):
             [
                 f'\x1b[36m{self.__class__.__name__:<20}\x1b[0m',
                 '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<20s} {value!r}'.format(
-                    title='colour_type:', value=self.colour_type.value
-                ),
+                '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
             ]
         )
 
@@ -432,9 +410,7 @@ class Color8Token(ANSIToken):
                 self.bg_token = Color8BGToken(value=param, ice_colours=ice_colours)
                 self.tokens.append(self.bg_token)
 
-    def generate_tokens(
-        self, curr_fg: ColorFGToken | None, curr_bg: ColorBGToken | None
-    ) -> Iterator[ANSIToken]:
+    def generate_tokens(self, curr_fg: ColorFGToken | None, curr_bg: ColorBGToken | None) -> Iterator[ANSIToken]:
         if self.sgr_tokens:
             if SGRToken(value='0') in self.sgr_tokens:
                 curr_fg = Color8FGToken(value='37', bright=self.bright_fg)
@@ -449,11 +425,7 @@ class Color8Token(ANSIToken):
                 yield Color8FGToken(value=curr_fg.original_value, bright=self.bright_fg)
 
         bright_bg = False
-        if (
-            self.bg_token
-            and isinstance(self.bg_token, Color8BGToken)
-            and self.bg_token.ice_colours
-        ):
+        if self.bg_token and isinstance(self.bg_token, Color8BGToken) and self.bg_token.ice_colours:
             bright_bg = True
         if curr_bg and isinstance(curr_bg, Color8BGToken) and curr_bg.ice_colours:
             bright_bg = True
@@ -461,9 +433,7 @@ class Color8Token(ANSIToken):
             bright_bg = True
 
         if self.bg_token:
-            yield Color8BGToken(
-                value=self.bg_token.original_value, ice_colours=bright_bg
-            )
+            yield Color8BGToken(value=self.bg_token.original_value, ice_colours=bright_bg)
         else:
             if curr_bg is None:
                 yield Color8BGToken(value='40', ice_colours=bright_bg)
@@ -478,9 +448,7 @@ class Color8Token(ANSIToken):
             f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m',
             '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
             '  {title:<20s} {value!r}'.format(title='params:', value=self.params),
-            '  {title:<20s} {value!r}'.format(
-                title='ice_colours:', value=self.ice_colours
-            ),
+            '  {title:<20s} {value!r}'.format(title='ice_colours:', value=self.ice_colours),
         ]
         for t in self.tokens:
             lines.append('\n'.join(['  ' + line for line in t.repr().split('\n')]))
@@ -505,12 +473,8 @@ class Color8FGToken(ColorFGToken):
             [
                 f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m'
                 + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(
-                    title='value_name:', value=self.value_name
-                )
-                + '{title:<10s} {value!r:<6}'.format(
-                    title='original:', value=self.original_value
-                )
+                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+                + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
             ]
         )
 
@@ -535,15 +499,9 @@ class Color8BGToken(ColorBGToken):
             [
                 f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m'
                 + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(
-                    title='value_name:', value=self.value_name
-                )
-                + '{title:<10s} {value!r:<6}'.format(
-                    title='original:', value=self.original_value
-                )
-                + '{title:<12s} {value!r}'.format(
-                    title='ice_colours:', value=self.ice_colours
-                )
+                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+                + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
+                + '{title:<12s} {value!r}'.format(title='ice_colours:', value=self.ice_colours)
             ]
         )
 
@@ -577,9 +535,7 @@ class SGRToken(ANSIToken):
             [
                 f'\x1b[95m{self.__class__.__name__:<20}\x1b[0m'
                 + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-                + '{title:<10s} {value!r:<8}'.format(
-                    title='value_name:', value=self.value_name
-                )
+                + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             ]
         )
 
@@ -664,9 +620,7 @@ class Tokeniser:
             self._textTokenType = TextToken
 
         dprint(f'Using extended sauce: {self.sauce!r}')
-        dprint(
-            f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}'
-        )
+        dprint(f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}')
 
     def create_tokens(self, code_chars: list[str]) -> list[ANSIToken]:
         'Create a token from a complete ANSI escape sequence.'
@@ -686,11 +640,7 @@ class Tokeniser:
 
         if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 'm':
             params = ''.join(code_chars[2:-1]).split(';')
-            return [
-                Color8Token(
-                    value=';'.join(params), params=params, ice_colours=self.ice_colours
-                )
-            ]
+            return [Color8Token(value=';'.join(params), params=params, ice_colours=self.ice_colours)]
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
             t = ControlToken(value=''.join(code_chars))
@@ -707,9 +657,7 @@ class Tokeniser:
                 isCode = True
                 currCode.append(ch)
                 if currText:
-                    yield self._textTokenType(
-                        value=''.join(currText), offset=self.glyph_offset
-                    )
+                    yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
                     currText = []
 
             elif isCode:
@@ -723,16 +671,12 @@ class Tokeniser:
                     self.counts[(ch, hex(ord(ch)))] += 1
                 if ch == '\n':
                     if currText:
-                        yield self._textTokenType(
-                            value=''.join(currText), offset=self.glyph_offset
-                        )
+                        yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
                         currText = []
                     yield NewLineToken(value=ch)
                 elif ord(ch) in C0_TOKEN_NAMES:
                     if currText:
-                        yield self._textTokenType(
-                            value=''.join(currText), offset=self.glyph_offset
-                        )
+                        yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
                         currText = []
                     yield C0Token(value=ch, offset=self.glyph_offset)
                 else:
@@ -755,12 +699,8 @@ class Renderer:
     def __post_init__(self) -> None:
         self.width = self.tokeniser.width
 
-    def split_text_token(
-        self, s: str, remainder: int, cls: type[ANSIToken] = TextToken
-    ) -> Iterator[ANSIToken]:
-        for chunk in [s[:remainder]] + list(
-            map(''.join, batched(s[remainder:], self.width))
-        ):
+    def split_text_token(self, s: str, remainder: int, cls: type[ANSIToken] = TextToken) -> Iterator[ANSIToken]:
+        for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
             yield cls(value=chunk)
 
     def _add_current_colors(self) -> None:
@@ -814,20 +754,13 @@ class Renderer:
             elif isinstance(t, ControlToken) and t.subtype == 'A':
                 if isinstance(tNext, C0Token) and tNext.value_name == 'CR':
                     skips = 2
-                elif (
-                    isinstance(tNext, ControlToken)
-                    and tNext.value_name == 'CursorForward'
-                ):
+                elif isinstance(tNext, ControlToken) and tNext.value_name == 'CursorForward':
                     skips = 1
 
             elif isinstance(t, (TextToken, CP437Token, ControlToken)):
-                dprint(
-                    f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}'
-                )
+                dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
                 if self._currLength + len(str(t)) == self.width:
-                    dprint(
-                        f'Exact fit for token: {t!r}, yielding line with reset and newline'
-                    )
+                    dprint(f'Exact fit for token: {t!r}, yielding line with reset and newline')
                     yield self._currLine + [t, SGRToken(value='0')] + newLine
                     self._currLine, self._currLength = [], 0
                     self._add_current_colors()
@@ -844,9 +777,7 @@ class Renderer:
                 dprint(
                     f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}'
                 )
-                for chunk in self.split_text_token(
-                    str(t), self.width - self._currLength, cls=type(t)
-                ):
+                for chunk in self.split_text_token(str(t), self.width - self._currLength, cls=type(t)):
                     dprint(
                         f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}'
                     )
@@ -860,24 +791,18 @@ class Renderer:
                         self._add_current_colors()
 
                     elif self._currLength > self.width:
-                        raise ValueError(
-                            f'Logic error in line splitting, {self._currLength} > {self.width}'
-                        )
+                        raise ValueError(f'Logic error in line splitting, {self._currLength} > {self.width}')
 
             elif isinstance(t, C0Token):
-                dprint(
-                    f'C0 Newline token: {t!r}, current line length: {self._currLength}, width: {self.width}'
-                )
+                dprint(f'C0 Newline token: {t!r}, current line length: {self._currLength}, width: {self.width}')
                 if t.value_name == 'CR':
                     continue
 
             elif isinstance(t, NewLineToken):
-                dprint(
-                    f'NewLineToken: current line length: {self._currLength}, width: {self.width}'
-                )
-                if (
-                    isinstance(tNext, ControlToken) and tNext.value_name == 'CursorUp'
-                ) and len(self._currLine) < self.width:
+                dprint(f'NewLineToken: current line length: {self._currLength}, width: {self.width}')
+                if (isinstance(tNext, ControlToken) and tNext.value_name == 'CursorUp') and len(
+                    self._currLine
+                ) < self.width:
                     continue
                 yield self._currLine + [SGRToken(value='0')] + newLine
                 self._currLine, self._currLength = [], 0
@@ -897,9 +822,7 @@ class Renderer:
     def iter_lines(self) -> Iterator[str]:
         for i, line in enumerate(self.gen_lines()):
             if DEBUG:
-                print(
-                    f'\n\x1b[30;103m[{i + 1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}'
-                )
+                print(f'\n\x1b[30;103m[{i + 1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
             yield ''.join(map(str, line))
 
     def render(self) -> str:
@@ -911,9 +834,7 @@ def parse_args() -> dict:
     parser = ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
 
-    group.add_argument(
-        '--fpath', '-f', type=str, help='Path to the ANSI file to render.'
-    )
+    group.add_argument('--fpath', '-f', type=str, help='Path to the ANSI file to render.')
     group.add_argument(
         '--launch-alacritty',
         action='store_true',
@@ -989,18 +910,14 @@ def main() -> None:
 
     sauce_only = args.pop('sauce_only')
     sauce_record, data = SauceRecord.parse_record(file_data, encoding.value)
-    sauce_extended, data = SauceRecordExtended.parse(
-        sauce_record, data, args['fpath'], encoding
-    )
+    sauce_extended, data = SauceRecordExtended.parse(sauce_record, data, args['fpath'], encoding)
 
     if sauce_only:
         pp.enabled = True
         pp.ppd(sauce_extended.asdict(), indent=2)
         return
 
-    t = Tokeniser(
-        **(args | {'encoding': encoding, 'sauce': sauce_extended, 'data': data})
-    )
+    t = Tokeniser(**(args | {'encoding': encoding, 'sauce': sauce_extended, 'data': data}))
     r = Renderer(fpath=args['fpath'], tokeniser=t)
     dprint('\nRendered string:')
     try:

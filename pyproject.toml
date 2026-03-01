@@ -51,6 +51,7 @@ ignore_missing_imports = true # ignore imports that can't be resolved (e.g., thi
 
 [tool.ruff]
 exclude = ["ops/", ".venv/"]
+line-length = 120
 
 [tool.ruff.lint]
 fixable = ["ALL"]

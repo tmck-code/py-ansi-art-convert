@@ -182,9 +182,9 @@ class TestSauceRecordParseRecord:
     def test_parse_multibyte_integers(self) -> None:
         'Test parsing of multi-byte integer fields'
 
-        sauce_data = SauceRecord(
-            ID='SAUCE', version='00', filesize=65535, tinfo1=1000, tinfo2=500
-        ).record_bytes('cp437')
+        sauce_data = SauceRecord(ID='SAUCE', version='00', filesize=65535, tinfo1=1000, tinfo2=500).record_bytes(
+            'cp437'
+        )
         full_data = b'x' + sauce_data
 
         record, data = SauceRecord.parse_record(full_data, 'cp437')
@@ -457,9 +457,7 @@ class TestSauceRecordExtendedParseTinfo:
     def test_parse_tinfo_ansi_file(self) -> None:
         'Test parsing tinfo dict for ANSi file'
 
-        sauce = SauceRecord(
-            data_type=1, file_type=1, tinfo1=80, tinfo2=25, tinfo3=0, tinfo4=0
-        )
+        sauce = SauceRecord(data_type=1, file_type=1, tinfo1=80, tinfo2=25, tinfo3=0, tinfo4=0)
 
         result = SauceRecordExtended.parse_tinfo(sauce)
 
@@ -470,9 +468,7 @@ class TestSauceRecordExtendedParseTinfo:
 
     def test_parse_tinfo_excludes_zero_fields(self) -> None:
         'Test that fields with name "0" are excluded'
-        sauce = SauceRecord(
-            data_type=1, file_type=1, tinfo1=80, tinfo2=0, tinfo3=0, tinfo4=0
-        )
+        sauce = SauceRecord(data_type=1, file_type=1, tinfo1=80, tinfo2=0, tinfo3=0, tinfo4=0)
 
         result = SauceRecordExtended.parse_tinfo(sauce)
 
@@ -505,9 +501,7 @@ class TestSauceRecordExtendedParse:
             tinfo_s='IBM VGA',
         )
 
-        extended, data = SauceRecordExtended.parse(
-            sauce, file_data_content, '/test/file.ans', SupportedEncoding.CP437
-        )
+        extended, data = SauceRecordExtended.parse(sauce, file_data_content, '/test/file.ans', SupportedEncoding.CP437)
 
         assert extended.fpath == '/test/file.ans'
         assert extended.encoding == SupportedEncoding.CP437
@@ -529,9 +523,7 @@ class TestSauceRecordExtendedParse:
             tinfo_s='IBM VGA',
         )
 
-        extended, data = SauceRecordExtended.parse(
-            sauce, 'data', '/test/file.ans', SupportedEncoding.CP437
-        )
+        extended, data = SauceRecordExtended.parse(sauce, 'data', '/test/file.ans', SupportedEncoding.CP437)
 
         assert extended.non_blink_mode is True
         assert extended.ice_colours is True
@@ -554,9 +546,7 @@ class TestSauceRecordExtendedParse:
         )
 
         # Parse without actual comment block (will gracefully return empty comments)
-        extended, data = SauceRecordExtended.parse(
-            sauce, file_content, '/test/file.ans', SupportedEncoding.CP437
-        )
+        extended, data = SauceRecordExtended.parse(sauce, file_content, '/test/file.ans', SupportedEncoding.CP437)
 
         # Verify parse completes and handles missing comments gracefully
         assert extended.sauce.comments == 2
@@ -566,13 +556,9 @@ class TestSauceRecordExtendedParse:
     def test_parse_with_font_data(self) -> None:
         'Test that font data is properly parsed'
 
-        sauce = SauceRecord(
-            ID='SAUCE', data_type=1, file_type=1, tinfo_s='IBM VGA', flags=0
-        )
+        sauce = SauceRecord(ID='SAUCE', data_type=1, file_type=1, tinfo_s='IBM VGA', flags=0)
 
-        extended, data = SauceRecordExtended.parse(
-            sauce, 'data', '/test/file.ans', SupportedEncoding.CP437
-        )
+        extended, data = SauceRecordExtended.parse(sauce, 'data', '/test/file.ans', SupportedEncoding.CP437)
 
         assert extended.font != {}
         assert extended.font['name'] == 'IBM VGA'
@@ -585,14 +571,10 @@ class TestSauceRecordExtendedParse:
         invalid_comments = 'COMNTbad'
         full_data = file_content + invalid_comments
 
-        sauce = SauceRecord(
-            ID='SAUCE', data_type=1, file_type=1, comments=1, flags=0, tinfo_s='IBM VGA'
-        )
+        sauce = SauceRecord(ID='SAUCE', data_type=1, file_type=1, comments=1, flags=0, tinfo_s='IBM VGA')
 
         # Should handle gracefully and return original data
-        extended, data = SauceRecordExtended.parse(
-            sauce, full_data, '/test/file.ans', SupportedEncoding.CP437
-        )
+        extended, data = SauceRecordExtended.parse(sauce, full_data, '/test/file.ans', SupportedEncoding.CP437)
 
         assert extended.comments_data == []
         assert data == full_data
@@ -827,9 +809,7 @@ class TestSauceIntegration:
             'cp437',
         )
 
-        extended, _final_data = SauceRecordExtended.parse(
-            sauce, data, '', SupportedEncoding.CP437
-        )
+        extended, _final_data = SauceRecordExtended.parse(sauce, data, '', SupportedEncoding.CP437)
         result = extended.asdict()
 
         expected = {
@@ -840,8 +820,7 @@ class TestSauceIntegration:
                 'file_name': '',
                 'font': {
                     'aspect_ratio': '4:3',
-                    'description': 'Standard hardware font on VGA cards for 80x25 text mode (code '
-                    'page 437)',
+                    'description': 'Standard hardware font on VGA cards for 80x25 text mode (code page 437)',
                     'font_size': '9x16',
                     'name': 'IBM VGA',
                     'pixel_aspect_ratio': '20:27 (1:1.35)',
@@ -896,9 +875,7 @@ class TestSauceIntegration:
         )
 
         sauce, data = SauceRecord.parse_record(
-            file_content
-            + comment_block.encode('cp437')
-            + sauce_binary.record_bytes('cp437'),
+            file_content + comment_block.encode('cp437') + sauce_binary.record_bytes('cp437'),
             'cp437',
         )
         expected = {
@@ -921,9 +898,7 @@ class TestSauceIntegration:
         }
         assert sauce._asdict() == expected
 
-        extended, final_data = SauceRecordExtended.parse(
-            sauce, data, '/test/art.ans', SupportedEncoding.CP437
-        )
+        extended, final_data = SauceRecordExtended.parse(sauce, data, '/test/art.ans', SupportedEncoding.CP437)
         assert final_data == 'Art data here'
 
         result = extended.asdict()

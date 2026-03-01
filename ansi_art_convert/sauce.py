@@ -52,9 +52,7 @@ class SauceRecordExtended(NamedTuple):
     @staticmethod
     def parse_comments(comment_block: str, n_comments: int) -> list[str]:
         if len(comment_block) != (n_comments * 64) + 5:
-            raise ValueError(
-                f'Invalid comment block size: expected {n_comments * 64 + 5}, got {len(comment_block)}'
-            )
+            raise ValueError(f'Invalid comment block size: expected {n_comments * 64 + 5}, got {len(comment_block)}')
 
         comments_data = []
         for c in map(''.join, batched(comment_block[5:], 64)):
@@ -82,13 +80,9 @@ class SauceRecordExtended(NamedTuple):
     def parse_tinfo_field(tinfo_key: str, sauce: SauceRecord) -> dict:
         if sauce.data_type == 5:
             # ('BinaryText', 'Variable'): {'tinfo1': '0', 'tinfo2': '0', 'tinfo3': '0', 'tinfo4': '0' }``
-            raise NotImplementedError(
-                'SAUCE tinfo parsing for data_type 5 (BinaryText) is not implemented.'
-            )
+            raise NotImplementedError('SAUCE tinfo parsing for data_type 5 (BinaryText) is not implemented.')
         return {
-            'name': FILE_DATA_TYPES.get((sauce.data_type, sauce.file_type), {}).get(
-                tinfo_key, '0'
-            ),
+            'name': FILE_DATA_TYPES.get((sauce.data_type, sauce.file_type), {}).get(tinfo_key, '0'),
             'value': getattr(sauce, tinfo_key),
         }
 
@@ -127,13 +121,9 @@ class SauceRecordExtended(NamedTuple):
         data, comment_block = file_data[:blockIdx], file_data[blockIdx:]
 
         try:
-            comments_data = SauceRecordExtended.parse_comments(
-                comment_block, sauce.comments
-            )
+            comments_data = SauceRecordExtended.parse_comments(comment_block, sauce.comments)
 
-            return SauceRecordExtended(
-                **(kwargs | {'comments_data': comments_data})
-            ), data
+            return SauceRecordExtended(**(kwargs | {'comments_data': comments_data})), data
         except ValueError as ve:
             dprint(f'Error parsing comments: {ve}')
             return SauceRecordExtended(**kwargs), file_data
@@ -210,9 +200,7 @@ class SauceRecord(NamedTuple):
             'tinfo4',
             'flags',
         }:
-            return int.from_bytes(
-                raw_value.rstrip(b'\x00'), byteorder='little', signed=False
-            )
+            return int.from_bytes(raw_value.rstrip(b'\x00'), byteorder='little', signed=False)
         else:
             return raw_value.replace(b'\x00', b'').strip().decode(encoding)
 
@@ -234,12 +222,8 @@ class SauceRecord(NamedTuple):
         for key, (start, end) in SauceRecord.offsets().items():
             value = getattr(self, key)
             if isinstance(value, int):
-                value_bytes = value.to_bytes(
-                    end - start, byteorder='little', signed=False
-                )
+                value_bytes = value.to_bytes(end - start, byteorder='little', signed=False)
             else:
-                value_bytes = value.encode(encoding)[: end - start].ljust(
-                    end - start, b'\x00'
-                )
+                value_bytes = value.encode(encoding)[: end - start].ljust(end - start, b'\x00')
             record_bytes[start:end] = value_bytes
         return bytes(record_bytes)
