@@ -67,7 +67,6 @@ class TestTextToken:
         offset = 0xE100
         token = TextToken(value='A', offset=offset)
         expected = {
-            'hex_values': [],
             'offset': offset,
             'value': chr(ord('A') + offset),
             'original_value': 'A',
@@ -79,7 +78,6 @@ class TestTextToken:
     def test_text_token_multiple_chars(self) -> None:
         token = TextToken(value='ABC', offset=0xE100)
         expected = {
-            'hex_values': [],
             'offset': 0xE100,
             'value': ''.join(chr(ord(c) + 0xE100) for c in 'ABC'),
             'original_value': 'ABC',
@@ -92,7 +90,6 @@ class TestTextToken:
         # Characters > 255 should not be offset
         token = TextToken(value='♥', offset=0xE100)
         expected = {
-            'hex_values': [],
             'offset': 0xE100,
             'value': '♥',
             'original_value': '♥',
@@ -104,7 +101,6 @@ class TestTextToken:
     def test_text_token_mixed(self) -> None:
         token = TextToken(value='A♥B', offset=0xE100)
         expected = {
-            'hex_values': [],
             'offset': 0xE100,
             'value': chr(ord('A') + 0xE100) + '♥' + chr(ord('B') + 0xE100),
             'original_value': 'A♥B',
@@ -116,7 +112,6 @@ class TestTextToken:
     def test_text_token_zero_offset(self) -> None:
         token = TextToken(value='ABC', offset=0)
         expected = {
-            'hex_values': [],
             'offset': 0,
             'value': 'ABC',
             'original_value': 'ABC',
@@ -138,7 +133,6 @@ class TestC0Token:
                 'value_name': 'CR',
                 'value_map': C0_TOKEN_NAMES,
                 'offset': offset,
-                'hex_values': [],
             }
             assert asdict(token) == expected
 
@@ -179,7 +173,6 @@ class TestCP437Token:
             'value_name': '',
             'value_map': {},
             'offset': 0xE100,
-            'hex_values': [],
         }
         assert asdict(token) == expected
 

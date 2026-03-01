@@ -58,14 +58,11 @@ def get_glyph_offset(font_name: str) -> int:
 @dataclass
 class TextToken(ANSIToken):
     offset: int = 0xE100
-    hex_values: list[str] = field(default_factory=list, repr=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
         new_values = []
         for v in self.value:
-            if DEBUG:
-                self.hex_values.append(str(hex(ord(v))))
             if ord(v) <= 255:  # and not (0x21 <= ord(v) <= 0x7e):
                 new_values.append(chr(ord(v) + self.offset))
             else:
@@ -80,9 +77,6 @@ class TextToken(ANSIToken):
                     title='original:', value=self.original_value
                 ),
                 '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<17s} {value!r}'.format(
-                    title='hex_values:', value=self.hex_values
-                ),
                 '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
             ]
         )
@@ -188,7 +182,6 @@ CP_437_MAP = {
 @dataclass
 class CP437Token(ANSIToken):
     offset: int = 0xE100
-    hex_values: list[str] = field(default_factory=list, repr=False)
 
     def _translate_char(self, ch: str) -> str:
         n = UNICODE_TO_CP437.get(ord(ch), ord(ch))
@@ -199,9 +192,6 @@ class CP437Token(ANSIToken):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if DEBUG:
-            for v in self.original_value:
-                self.hex_values.append(str(hex(ord(v))))
         self.value = ''.join([self._translate_char(v) for v in self.original_value])
 
     def repr(self) -> str:
@@ -212,9 +202,6 @@ class CP437Token(ANSIToken):
                     title='original:', value=self.original_value
                 ),
                 '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
-                '  {title:<17s} {value!r}'.format(
-                    title='hex_values:', value=self.hex_values
-                ),
                 '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
             ]
         )
