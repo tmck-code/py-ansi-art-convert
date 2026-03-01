@@ -1,43 +1,50 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
+
+import pprint
+import sys
 from argparse import ArgumentParser
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import batched, pairwise, chain
-import pprint
-import sys
+from itertools import batched, chain, pairwise
 from typing import Iterator, List
 
 from laser_prynter import pp
 
-from ansi_art_convert.encoding import detect_encoding, SupportedEncoding
+from ansi_art_convert.encoding import SupportedEncoding, detect_encoding
 from ansi_art_convert.font_data import FONT_ALIASES, FONT_OFFSETS, UNICODE_TO_CP437
-from ansi_art_convert.log import dprint, DEBUG
-from ansi_art_convert.sauce import SauceRecordExtended, SauceRecord
+from ansi_art_convert.log import DEBUG, dprint
+from ansi_art_convert.sauce import SauceRecord, SauceRecordExtended
 from ansi_art_convert.terminals.alacritty import AlacrittyClient
+
 
 @dataclass
 class ANSIToken:
-    value:          str
-    value_name:     str  = field(default='')
-    value_map:      dict = field(repr=False, default_factory=dict)
-    original_value: str  = field(init=False)
+    value: str
+    value_name: str = field(default='')
+    value_map: dict = field(repr=False, default_factory=dict)
+    original_value: str = field(init=False)
 
     def __post_init__(self) -> None:
         self.original_value = self.value
         self.value_name = self.value_map.get(self.value, '')
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[37m{self.__class__.__name__:<20}\x1b[0m'
-            + '  {title:<s} {value!r:<4}'.format(title='value:', value=self.value)
-            + '  {title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[37m{self.__class__.__name__:<20}\x1b[0m'
+                + '  {title:<s} {value!r:<4}'.format(title='value:', value=self.value)
+                + '  {title:<10s} {value!r:<8}'.format(
+                    title='value_name:', value=self.value_name
+                )
+            ]
+        )
 
     def __str__(self) -> str:
         return self.value
+
 
 def get_glyph_offset(font_name: str) -> int:
     if font_name in FONT_OFFSETS:
@@ -59,27 +66,63 @@ class TextToken(ANSIToken):
         for v in self.value:
             if DEBUG:
                 self.hex_values.append(str(hex(ord(v))))
-            if ord(v) <= 255: # and not (0x21 <= ord(v) <= 0x7e):
-                new_values.append(chr(ord(v)+self.offset))
+            if ord(v) <= 255:  # and not (0x21 <= ord(v) <= 0x7e):
+                new_values.append(chr(ord(v) + self.offset))
             else:
                 new_values.append(v)
         self.value = ''.join(new_values)
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
-            '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
-            '  {title:<17s} {value!r}'.format(title='hex_values:', value=self.hex_values),
-            '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
+                '  {title:<17s} {value!r}'.format(
+                    title='original:', value=self.original_value
+                ),
+                '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
+                '  {title:<17s} {value!r}'.format(
+                    title='hex_values:', value=self.hex_values
+                ),
+                '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
+            ]
+        )
+
 
 C0_TOKEN_NAMES = {
-    0x00: 'NUL', 0x01: 'SOH', 0x02: 'STX', 0x03: 'ETX', 0x04: 'EOT', 0x05: 'ENQ', 0x06: 'ACK', 0x07: 'BEL',
-    0x08: 'BS',  0x09: 'HT',  0x0A: 'LF',  0x0B: 'VT',  0x0C: 'FF',  0x0D: 'CR',  0x0E: 'SO',  0x0F: 'SI',
-    0x10: 'DLE', 0x11: 'DC1', 0x12: 'DC2', 0x13: 'DC3', 0x14: 'DC4', 0x15: 'NAK', 0x16: 'SYN', 0x17: 'ETB',
-    0x18: 'CAN', 0x19: 'EM',  0x1A: 'SUB', 0x1B: 'ESC', 0x1C: 'FS',  0x1D: 'GS',  0x1E: 'RS',  0x1F: 'US',
+    0x00: 'NUL',
+    0x01: 'SOH',
+    0x02: 'STX',
+    0x03: 'ETX',
+    0x04: 'EOT',
+    0x05: 'ENQ',
+    0x06: 'ACK',
+    0x07: 'BEL',
+    0x08: 'BS',
+    0x09: 'HT',
+    0x0A: 'LF',
+    0x0B: 'VT',
+    0x0C: 'FF',
+    0x0D: 'CR',
+    0x0E: 'SO',
+    0x0F: 'SI',
+    0x10: 'DLE',
+    0x11: 'DC1',
+    0x12: 'DC2',
+    0x13: 'DC3',
+    0x14: 'DC4',
+    0x15: 'NAK',
+    0x16: 'SYN',
+    0x17: 'ETB',
+    0x18: 'CAN',
+    0x19: 'EM',
+    0x1A: 'SUB',
+    0x1B: 'ESC',
+    0x1C: 'FS',
+    0x1D: 'GS',
+    0x1E: 'RS',
+    0x1F: 'US',
 }
+
 
 @dataclass
 class C0Token(TextToken):
@@ -92,19 +135,53 @@ class C0Token(TextToken):
             self.value = ''
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[33m{self.__class__.__name__:<20}\x1b[0m'
-            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
-            + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[33m{self.__class__.__name__:<20}\x1b[0m'
+                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+                + '{title:<10s} {value!r:<8}'.format(
+                    title='value_name:', value=self.value_name
+                )
+                + '{title:<10s} {value!r:<6}'.format(
+                    title='original:', value=self.original_value
+                )
+                + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
+            ]
+        )
+
 
 CP_437_MAP = {
-    0x01: '☺', 0x02: '☻', 0x03: '♥', 0x04: '♦', 0x05: '♣', 0x06: '♠', 0x07: '•', 0x08: '◘',
-    0x09: '○', 0x0A: '◙', 0x0B: '♂', 0x0C: '♀', 0x0D: '♪', 0x0E: '♫', 0x0F: '☼', 0x10: '►',
-    0x11: '◄', 0x12: '↕', 0x13: '‼', 0x14: '¶', 0x15: '§', 0x16: '▬', 0x17: '↨', 0x18: '↑',
-    0x19: '↓', 0x1A: '→', 0x1B: '←', 0x1C: '∟', 0x1D: '↔', 0x1E: '▲', 0x1F: '▼',
+    0x01: '☺',
+    0x02: '☻',
+    0x03: '♥',
+    0x04: '♦',
+    0x05: '♣',
+    0x06: '♠',
+    0x07: '•',
+    0x08: '◘',
+    0x09: '○',
+    0x0A: '◙',
+    0x0B: '♂',
+    0x0C: '♀',
+    0x0D: '♪',
+    0x0E: '♫',
+    0x0F: '☼',
+    0x10: '►',
+    0x11: '◄',
+    0x12: '↕',
+    0x13: '‼',
+    0x14: '¶',
+    0x15: '§',
+    0x16: '▬',
+    0x17: '↨',
+    0x18: '↑',
+    0x19: '↓',
+    0x1A: '→',
+    0x1B: '←',
+    0x1C: '∟',
+    0x1D: '↔',
+    0x1E: '▲',
+    0x1F: '▼',
 }
 
 
@@ -126,16 +203,21 @@ class CP437Token(ANSIToken):
             for v in self.original_value:
                 self.hex_values.append(str(hex(ord(v))))
         self.value = ''.join([self._translate_char(v) for v in self.original_value])
-        self.value_name = self.value_map.get(self.original_value, '')
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
-            '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
-            '  {title:<17s} {value!r}'.format(title='hex_values:', value=self.hex_values),
-            '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
+                '  {title:<17s} {value!r}'.format(
+                    title='original:', value=self.original_value
+                ),
+                '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
+                '  {title:<17s} {value!r}'.format(
+                    title='hex_values:', value=self.hex_values
+                ),
+                '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
+            ]
+        )
 
 
 ANSI_CONTROL_CODES = {
@@ -156,6 +238,7 @@ ANSI_CONTROL_CODES = {
     'u': 'RestoreCursorPosition',
 }
 
+
 @dataclass
 class ControlToken(ANSIToken):
     value_map: dict = field(repr=False, default_factory=lambda: ANSI_CONTROL_CODES)
@@ -171,121 +254,179 @@ class ControlToken(ANSIToken):
         lines = (
             f'\x1b[35m{self.__class__.__name__:<20}\x1b[0m'
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+            + '{title:<10s} {value!r:<8}'.format(
+                title='value_name:', value=self.value_name
+            )
             + '{title:<10s} {value!r}'.format(title='subtype:', value=self.subtype)
-            + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
+            + '{title:<10s} {value!r}'.format(
+                title='original:', value=self.original_value
+            )
             # + ' {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         )
         return lines
 
     def __str__(self) -> str:
         if self.subtype == 'C':
-            return ' '*int(self.value[:-1] or '1')
+            return ' ' * int(self.value[:-1] or '1')
         elif self.subtype == 'H':
             return '\n'
         else:
             return ''
 
+
 class ColourType(Enum):
     FG = 'fg'
     BG = 'bg'
+
 
 @dataclass
 class ColorFGToken(ANSIToken):
     pass
 
+
 @dataclass
 class ColorBGToken(ANSIToken):
     pass
 
+
 @dataclass
 class TrueColorFGToken(ColorFGToken):
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
+
     def __str__(self) -> str:
         r, g, b = self.value.split(',')
         return f'\x1b[38;2;{r};{g};{b}m'
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m',
+                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+                '  {title:<20s} {value!r}'.format(
+                    title='colour_type:', value=self.colour_type.value
+                ),
+            ]
+        )
+
 
 @dataclass
 class TrueColorBGToken(ColorBGToken):
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
+
     def __str__(self) -> str:
         r, g, b = self.value.split(',')
         return f'\x1b[48;2;{r};{g};{b}m'
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m',
+                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+                '  {title:<20s} {value!r}'.format(
+                    title='colour_type:', value=self.colour_type.value
+                ),
+            ]
+        )
+
 
 @dataclass
 class Color256FGToken(ColorFGToken):
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
+
     def __str__(self) -> str:
         n = self.value
         return f'\x1b[38;5;{n}m'
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[34m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[34m{self.__class__.__name__:<20}\x1b[0m',
+                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+                '  {title:<20s} {value!r}'.format(
+                    title='colour_type:', value=self.colour_type.value
+                ),
+            ]
+        )
+
 
 @dataclass
 class Color256BGToken(ColorBGToken):
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
+
     def __str__(self) -> str:
         n = self.value
         return f'\x1b[48;5;{n}m'
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[36m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-            '  {title:<20s} {value!r}'.format(title='colour_type:', value=self.colour_type.value),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[36m{self.__class__.__name__:<20}\x1b[0m',
+                '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+                '  {title:<20s} {value!r}'.format(
+                    title='colour_type:', value=self.colour_type.value
+                ),
+            ]
+        )
+
 
 COLOUR_8_FG_VALUES = {
-    '30': 'black', '31': 'red', '32': 'green', '33': 'yellow',
-    '34': 'blue', '35': 'magenta', '36': 'cyan', '37': 'white',
+    '30': 'black',
+    '31': 'red',
+    '32': 'green',
+    '33': 'yellow',
+    '34': 'blue',
+    '35': 'magenta',
+    '36': 'cyan',
+    '37': 'white',
 }
 COLOUR_8_FG_BRIGHT_VALUES = {
-    '90': 'bright_black', '91': 'bright_red', '92': 'bright_green', '93': 'bright_yellow',
-    '94': 'bright_blue', '95': 'bright_magenta', '96': 'bright_cyan', '97': 'bright_white',
+    '90': 'bright_black',
+    '91': 'bright_red',
+    '92': 'bright_green',
+    '93': 'bright_yellow',
+    '94': 'bright_blue',
+    '95': 'bright_magenta',
+    '96': 'bright_cyan',
+    '97': 'bright_white',
 }
 COLOUR_8_BG_VALUES = {
-    '40': 'black', '41': 'red', '42': 'green', '43': 'yellow',
-    '44': 'blue', '45': 'magenta', '46': 'cyan', '47': 'white',
+    '40': 'black',
+    '41': 'red',
+    '42': 'green',
+    '43': 'yellow',
+    '44': 'blue',
+    '45': 'magenta',
+    '46': 'cyan',
+    '47': 'white',
 }
 COLOUR_8_BG_BRIGHT_VALUES = {
-    '100': 'bright_black', '101': 'bright_red', '102': 'bright_green', '103': 'bright_yellow',
-    '104': 'bright_blue', '105': 'bright_magenta', '106': 'bright_cyan', '107': 'bright_white',
+    '100': 'bright_black',
+    '101': 'bright_red',
+    '102': 'bright_green',
+    '103': 'bright_yellow',
+    '104': 'bright_blue',
+    '105': 'bright_magenta',
+    '106': 'bright_cyan',
+    '107': 'bright_white',
 }
 COLOUR_8_FG_VALUES = COLOUR_8_FG_VALUES | COLOUR_8_FG_BRIGHT_VALUES
 COLOUR_8_BG_VALUES = COLOUR_8_BG_VALUES | COLOUR_8_BG_BRIGHT_VALUES
 COLOUR_8_VALUES = COLOUR_8_FG_VALUES | COLOUR_8_BG_VALUES
 
+
 @dataclass
 class Color8Token(ANSIToken):
-    params:      list[str]            = field(default_factory=list)
-    ice_colours: bool                 = field(repr=False, default=False)
-    bright_bg:   bool                  = field(init=False, default=False)
-    bright_fg:   bool                 = field(init=False, default=False)
-    sgr_tokens:  list[SGRToken]      = field(init=False, default_factory=list)
-    fg_token:    Color8FGToken | None = field(init=False, default=None)
-    bg_token:    Color8BGToken | None = field(init=False, default=None)
-    tokens:      list[ANSIToken]      = field(init=False, default_factory=list)
+    params: list[str] = field(default_factory=list)
+    ice_colours: bool = field(repr=False, default=False)
+    bright_bg: bool = field(init=False, default=False)
+    bright_fg: bool = field(init=False, default=False)
+    sgr_tokens: list[SGRToken] = field(init=False, default_factory=list)
+    fg_token: Color8FGToken | None = field(init=False, default=None)
+    bg_token: Color8BGToken | None = field(init=False, default=None)
+    tokens: list[ANSIToken] = field(init=False, default_factory=list)
 
     def __post_init__(self) -> None:
+        super().__post_init__()
         for param in self.params:
             if param in SGR_CODES:
                 if self.ice_colours and param == '5':
@@ -304,7 +445,9 @@ class Color8Token(ANSIToken):
                 self.bg_token = Color8BGToken(value=param, ice_colours=ice_colours)
                 self.tokens.append(self.bg_token)
 
-    def generate_tokens(self, curr_fg: ColorFGToken | None, curr_bg: ColorBGToken | None) -> Iterator[ANSIToken]:
+    def generate_tokens(
+        self, curr_fg: ColorFGToken | None, curr_bg: ColorBGToken | None
+    ) -> Iterator[ANSIToken]:
         if self.sgr_tokens:
             if SGRToken(value='0') in self.sgr_tokens:
                 curr_fg = Color8FGToken(value='37', bright=self.bright_fg)
@@ -319,7 +462,11 @@ class Color8Token(ANSIToken):
                 yield Color8FGToken(value=curr_fg.original_value, bright=self.bright_fg)
 
         bright_bg = False
-        if self.bg_token and isinstance(self.bg_token, Color8BGToken) and self.bg_token.ice_colours:
+        if (
+            self.bg_token
+            and isinstance(self.bg_token, Color8BGToken)
+            and self.bg_token.ice_colours
+        ):
             bright_bg = True
         if curr_bg and isinstance(curr_bg, Color8BGToken) and curr_bg.ice_colours:
             bright_bg = True
@@ -327,7 +474,9 @@ class Color8Token(ANSIToken):
             bright_bg = True
 
         if self.bg_token:
-            yield Color8BGToken(value=self.bg_token.original_value, ice_colours=bright_bg)
+            yield Color8BGToken(
+                value=self.bg_token.original_value, ice_colours=bright_bg
+            )
         else:
             if curr_bg is None:
                 yield Color8BGToken(value='40', ice_colours=bright_bg)
@@ -342,12 +491,15 @@ class Color8Token(ANSIToken):
             f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m',
             '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
             '  {title:<20s} {value!r}'.format(title='params:', value=self.params),
-            '  {title:<20s} {value!r}'.format(title='ice_colours:', value=self.ice_colours),
+            '  {title:<20s} {value!r}'.format(
+                title='ice_colours:', value=self.ice_colours
+            ),
         ]
         for t in self.tokens:
             lines.append('\n'.join(['  ' + line for line in t.repr().split('\n')]))
         return '\n'.join(lines)
-    
+
+
 @dataclass
 class Color8FGToken(ColorFGToken):
     value_map: dict = field(repr=False, default_factory=lambda: COLOUR_8_FG_VALUES)
@@ -362,15 +514,22 @@ class Color8FGToken(ColorFGToken):
                 self.value = str(base_value + 60)
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m'
-            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m'
+                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+                + '{title:<10s} {value!r:<8}'.format(
+                    title='value_name:', value=self.value_name
+                )
+                + '{title:<10s} {value!r:<6}'.format(
+                    title='original:', value=self.original_value
+                )
+            ]
+        )
 
     def __str__(self) -> str:
         return f'\x1b[{self.value}m'
+
 
 @dataclass
 class Color8BGToken(ColorBGToken):
@@ -385,34 +544,58 @@ class Color8BGToken(ColorBGToken):
             self.value = str(int(self.value) + 60)
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m'
-            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
-            + '{title:<12s} {value!r}'.format(title='ice_colours:', value=self.ice_colours)
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m'
+                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+                + '{title:<10s} {value!r:<8}'.format(
+                    title='value_name:', value=self.value_name
+                )
+                + '{title:<10s} {value!r:<6}'.format(
+                    title='original:', value=self.original_value
+                )
+                + '{title:<12s} {value!r}'.format(
+                    title='ice_colours:', value=self.ice_colours
+                )
+            ]
+        )
 
     def __str__(self) -> str:
         return f'\x1b[{self.value}m'
 
+
 SGR_CODES = {
-    '0':  'Reset', '1':  'Bold', '2':  'Dim', '3':  'Italic', '4':  'Underline', '5':  'BlinkSlow',
-    '6':  'BlinkRapid', '7':  'ReverseVideo', '8':  'Conceal', '9':  'CrossedOut',
+    '0': 'Reset',
+    '1': 'Bold',
+    '2': 'Dim',
+    '3': 'Italic',
+    '4': 'Underline',
+    '5': 'BlinkSlow',
+    '6': 'BlinkRapid',
+    '7': 'ReverseVideo',
+    '8': 'Conceal',
+    '9': 'CrossedOut',
 }
+
 
 @dataclass
 class SGRToken(ANSIToken):
     value_map: dict = field(repr=False, default_factory=lambda: SGR_CODES)
+
     def __str__(self) -> str:
         return f'\x1b[{self.value}m'
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[95m{self.__class__.__name__:<20}\x1b[0m'
-            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[95m{self.__class__.__name__:<20}\x1b[0m'
+                + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
+                + '{title:<10s} {value!r:<8}'.format(
+                    title='value_name:', value=self.value_name
+                )
+            ]
+        )
+
 
 @dataclass
 class NewLineToken(ANSIToken):
@@ -420,10 +603,13 @@ class NewLineToken(ANSIToken):
         return '\n'
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m'
-            + '{title:<s} {value!r}'.format(title='value:', value=self.value),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m'
+                + '{title:<s} {value!r}'.format(title='value:', value=self.value),
+            ]
+        )
+
 
 @dataclass
 class EOFToken(ANSIToken):
@@ -431,35 +617,42 @@ class EOFToken(ANSIToken):
         return ''
 
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m'
-            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m'
+                + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            ]
+        )
+
 
 @dataclass
 class UnknownToken(ANSIToken):
     def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m'
-            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-        ])
+        return '\n'.join(
+            [
+                f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m'
+                + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            ]
+        )
+
 
 @dataclass
 class EndOfFile(ANSIToken):
     value: str = ''
 
+
 @dataclass
 class Tokeniser:
-    fpath:        str
-    sauce:        SauceRecordExtended
-    data:         str
-    font_name:    str
-    encoding:     SupportedEncoding   = SupportedEncoding.CP437
-    tokens:       list[ANSIToken]     = field(default_factory=list, init=False)
-    glyph_offset: int                 = field(init=False, default=0)
-    ice_colours:  bool                = field(default=False)
-    width:        int                 = field(default=0)
-    counts:       Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
+    fpath: str
+    sauce: SauceRecordExtended
+    data: str
+    font_name: str
+    encoding: SupportedEncoding = SupportedEncoding.CP437
+    tokens: list[ANSIToken] = field(default_factory=list, init=False)
+    glyph_offset: int = field(init=False, default=0)
+    ice_colours: bool = field(default=False)
+    width: int = field(default=0)
+    counts: Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
     _textTokenType: type = field(init=False, repr=False, default=TextToken)
 
     def __post_init__(self) -> None:
@@ -484,7 +677,9 @@ class Tokeniser:
             self._textTokenType = TextToken
 
         dprint(f'Using extended sauce: {self.sauce!r}')
-        dprint(f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}')
+        dprint(
+            f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}'
+        )
 
     def create_tokens(self, code_chars: list[str]) -> list[ANSIToken]:
         'Create a token from a complete ANSI escape sequence.'
@@ -504,7 +699,11 @@ class Tokeniser:
 
         if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 'm':
             params = ''.join(code_chars[2:-1]).split(';')
-            return [Color8Token(value=';'.join(params), params=params, ice_colours=self.ice_colours)]
+            return [
+                Color8Token(
+                    value=';'.join(params), params=params, ice_colours=self.ice_colours
+                )
+            ]
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
             t = ControlToken(value=''.join(code_chars))
@@ -521,7 +720,9 @@ class Tokeniser:
                 isCode = True
                 currCode.append(ch)
                 if currText:
-                    yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
+                    yield self._textTokenType(
+                        value=''.join(currText), offset=self.glyph_offset
+                    )
                     currText = []
 
             elif isCode:
@@ -535,12 +736,16 @@ class Tokeniser:
                     self.counts[(ch, hex(ord(ch)))] += 1
                 if ch == '\n':
                     if currText:
-                        yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
+                        yield self._textTokenType(
+                            value=''.join(currText), offset=self.glyph_offset
+                        )
                         currText = []
                     yield NewLineToken(value=ch)
                 elif ord(ch) in C0_TOKEN_NAMES:
                     if currText:
-                        yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
+                        yield self._textTokenType(
+                            value=''.join(currText), offset=self.glyph_offset
+                        )
                         currText = []
                     yield C0Token(value=ch, offset=self.glyph_offset)
                 else:
@@ -548,22 +753,27 @@ class Tokeniser:
         if currText:
             yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
 
+
 @dataclass
 class Renderer:
-    fpath:       str
-    tokeniser:   Tokeniser = field(repr=False)
-    _currLine:   List[ANSIToken] = field(default_factory=list, repr=False)
+    fpath: str
+    tokeniser: Tokeniser = field(repr=False)
+    _currLine: List[ANSIToken] = field(default_factory=list, repr=False)
     _currLength: int = field(default=0, repr=False)
-    _currFG:     ColorFGToken | None = field(default=None, repr=False)
-    _currBG:     ColorBGToken | None = field(default=None, repr=False)
-    _currSGR:    ANSIToken | None = field(default=None, repr=False)
-    width:       int              = field(init=False)
+    _currFG: ColorFGToken | None = field(default=None, repr=False)
+    _currBG: ColorBGToken | None = field(default=None, repr=False)
+    _currSGR: ANSIToken | None = field(default=None, repr=False)
+    width: int = field(init=False)
 
     def __post_init__(self) -> None:
         self.width = self.tokeniser.width
 
-    def split_text_token(self, s: str, remainder: int, cls: type[ANSIToken] = TextToken) -> Iterator[ANSIToken]:
-        for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
+    def split_text_token(
+        self, s: str, remainder: int, cls: type[ANSIToken] = TextToken
+    ) -> Iterator[ANSIToken]:
+        for chunk in [s[:remainder]] + list(
+            map(''.join, batched(s[remainder:], self.width))
+        ):
             yield cls(value=chunk)
 
     def _add_current_colors(self) -> None:
@@ -585,12 +795,13 @@ class Renderer:
             if skips > 0:
                 skips -= 1
                 continue
-            dprint(f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}')
+            dprint(
+                f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}'
+            )
             if isinstance(t, ControlToken) and t.subtype in ('H', 's'):
                 newLine = []
 
             if isinstance(t, Color8Token):
-
                 tokens = list(t.generate_tokens(self._currFG, self._currBG))
                 self._currLine.extend(tokens)
 
@@ -616,27 +827,42 @@ class Renderer:
             elif isinstance(t, ControlToken) and t.subtype == 'A':
                 if isinstance(tNext, C0Token) and tNext.value_name == 'CR':
                     skips = 2
-                elif isinstance(tNext, ControlToken) and tNext.value_name == 'CursorForward':
+                elif (
+                    isinstance(tNext, ControlToken)
+                    and tNext.value_name == 'CursorForward'
+                ):
                     skips = 1
 
             elif isinstance(t, (TextToken, CP437Token, ControlToken)):
-                dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
+                dprint(
+                    f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}'
+                )
                 if self._currLength + len(str(t)) == self.width:
-                    dprint(f'Exact fit for token: {t!r}, yielding line with reset and newline')
+                    dprint(
+                        f'Exact fit for token: {t!r}, yielding line with reset and newline'
+                    )
                     yield self._currLine + [t, SGRToken(value='0')] + newLine
                     self._currLine, self._currLength = [], 0
                     self._add_current_colors()
                     continue
 
                 if self._currLength + len(str(t)) < self.width:
-                    dprint(f'Adding token to current line: {t!r}, new line length would be: {self._currLength + len(str(t))}')
+                    dprint(
+                        f'Adding token to current line: {t!r}, new line length would be: {self._currLength + len(str(t))}'
+                    )
                     self._currLine.append(t)
                     self._currLength += len(str(t))
                     continue
 
-                dprint(f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}')
-                for chunk in self.split_text_token(str(t), self.width - self._currLength, cls=type(t)):
-                    dprint(f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}')
+                dprint(
+                    f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}'
+                )
+                for chunk in self.split_text_token(
+                    str(t), self.width - self._currLength, cls=type(t)
+                ):
+                    dprint(
+                        f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}'
+                    )
                     self._currLine.append(chunk)
                     self._currLength += len(str(chunk))
 
@@ -647,16 +873,24 @@ class Renderer:
                         self._add_current_colors()
 
                     elif self._currLength > self.width:
-                        raise ValueError(f'Logic error in line splitting, {self._currLength} > {self.width}')
+                        raise ValueError(
+                            f'Logic error in line splitting, {self._currLength} > {self.width}'
+                        )
 
             elif isinstance(t, C0Token):
-                dprint(f'C0 Newline token: {t!r}, current line length: {self._currLength}, width: {self.width}')
+                dprint(
+                    f'C0 Newline token: {t!r}, current line length: {self._currLength}, width: {self.width}'
+                )
                 if t.value_name == 'CR':
                     continue
 
             elif isinstance(t, NewLineToken):
-                dprint(f'NewLineToken: current line length: {self._currLength}, width: {self.width}')
-                if (isinstance(tNext, ControlToken) and tNext.value_name == 'CursorUp') and len(self._currLine) < self.width:
+                dprint(
+                    f'NewLineToken: current line length: {self._currLength}, width: {self.width}'
+                )
+                if (
+                    isinstance(tNext, ControlToken) and tNext.value_name == 'CursorUp'
+                ) and len(self._currLine) < self.width:
                     continue
                 yield self._currLine + [SGRToken(value='0')] + newLine
                 self._currLine, self._currLength = [], 0
@@ -676,29 +910,72 @@ class Renderer:
     def iter_lines(self) -> Iterator[str]:
         for i, line in enumerate(self.gen_lines()):
             if DEBUG:
-                print(f'\n\x1b[30;103m[{i+1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
+                print(
+                    f'\n\x1b[30;103m[{i + 1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}'
+                )
             yield ''.join(map(str, line))
 
     def render(self) -> str:
         'Render tokens into a string with proper line wrapping.'
         return ''.join(list(self.iter_lines()))
 
+
 def parse_args() -> dict:
     parser = ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
 
-    group.add_argument('--fpath',      '-f', type=str,                               help='Path to the ANSI file to render.')
-    group.add_argument('--launch-alacritty', action='store_true', default=False,     help='Launch the rendered output in Alacritty.')
+    group.add_argument(
+        '--fpath', '-f', type=str, help='Path to the ANSI file to render.'
+    )
+    group.add_argument(
+        '--launch-alacritty',
+        action='store_true',
+        default=False,
+        help='Launch the rendered output in Alacritty.',
+    )
 
-    parser.add_argument('--encoding',   '-e', type=str,                              help='Specify the file encoding (cp437, iso-8859-1, ascii, utf-8) if the auto-detection was incorrect.')
-    parser.add_argument('--sauce-only', '-s', action='store_true', default=False,    help='Only output the SAUCE record information as JSON and exit.')
-    parser.add_argument('--verbose',    '-v', action='store_true', default=False,    help='Enable verbose debug output.')
-    parser.add_argument('--ice-colours',      action='store_true', default=False,    help='Force enabling ICE colours (non-blinking background).')
-    parser.add_argument('--font-name',  '-F', type=str, choices=FONT_ALIASES.keys(), help='Specify the font name to determine glyph offset (overrides SAUCE font).')
-    parser.add_argument('--width',      '-w', type=int,                              help='Specify the output width (overrides SAUCE tinfo1).')
-
+    parser.add_argument(
+        '--encoding',
+        '-e',
+        type=str,
+        help='Specify the file encoding (cp437, iso-8859-1, ascii, utf-8) if the auto-detection was incorrect.',
+    )
+    parser.add_argument(
+        '--sauce-only',
+        '-s',
+        action='store_true',
+        default=False,
+        help='Only output the SAUCE record information as JSON and exit.',
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        action='store_true',
+        default=False,
+        help='Enable verbose debug output.',
+    )
+    parser.add_argument(
+        '--ice-colours',
+        action='store_true',
+        default=False,
+        help='Force enabling ICE colours (non-blinking background).',
+    )
+    parser.add_argument(
+        '--font-name',
+        '-F',
+        type=str,
+        choices=FONT_ALIASES.keys(),
+        help='Specify the font name to determine glyph offset (overrides SAUCE font).',
+    )
+    parser.add_argument(
+        '--width',
+        '-w',
+        type=int,
+        help='Specify the output width (overrides SAUCE tinfo1).',
+    )
 
     return parser.parse_args().__dict__
+
 
 def main() -> None:
     args = parse_args()
@@ -725,14 +1002,18 @@ def main() -> None:
 
     sauce_only = args.pop('sauce_only')
     sauce_record, data = SauceRecord.parse_record(file_data, encoding.value)
-    sauce_extended, data = SauceRecordExtended.parse(sauce_record, data, args['fpath'], encoding)
+    sauce_extended, data = SauceRecordExtended.parse(
+        sauce_record, data, args['fpath'], encoding
+    )
 
     if sauce_only:
         pp.enabled = True
         pp.ppd(sauce_extended.asdict(), indent=2)
         return
 
-    t = Tokeniser(**(args | {'encoding': encoding, 'sauce': sauce_extended, 'data': data}))
+    t = Tokeniser(
+        **(args | {'encoding': encoding, 'sauce': sauce_extended, 'data': data})
+    )
     r = Renderer(fpath=args['fpath'], tokeniser=t)
     dprint('\nRendered string:')
     try:
