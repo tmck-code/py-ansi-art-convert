@@ -57,13 +57,17 @@ class TextToken(ANSIToken):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        self.value = TextToken._translate_chars(self.value, self.offset)
+
+    @staticmethod
+    def _translate_chars(s: str, offset: int) -> str:
         new_values = []
-        for v in self.value:
+        for v in s:
             if ord(v) <= 255:  # and not (0x21 <= ord(v) <= 0x7e):
-                new_values.append(chr(ord(v) + self.offset))
+                new_values.append(chr(ord(v) + offset))
             else:
                 new_values.append(v)
-        self.value = ''.join(new_values)
+        return ''.join(new_values)
 
     def repr(self) -> str:
         return '\n'.join([
@@ -671,9 +675,10 @@ class Renderer:
     def __post_init__(self) -> None:
         self.width = self.tokeniser.width
 
-    def split_text_token(self, s: str, remainder: int, cls: type[ANSIToken] = TextToken) -> Iterator[ANSIToken]:
+    def split_text_token(self, t: TextToken, remainder: int) -> Iterator[ANSIToken]:
+        s = str(t)
         for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
-            yield cls(value=chunk)
+            yield t.__class__(value=chunk, offset=t.offset)
 
     def _add_current_colors(self) -> None:
         'Re-add current FG/BG colors to the current line.'
@@ -749,7 +754,9 @@ class Renderer:
                 dprint(
                     f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}'
                 )
-                for chunk in self.split_text_token(str(t), self.width - self._currLength, cls=type(t)):
+                if not isinstance(t, TextToken):
+                    continue
+                for chunk in self.split_text_token(t, self.width - self._currLength):
                     dprint(
                         f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}'
                     )
