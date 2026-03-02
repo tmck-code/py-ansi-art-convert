@@ -3,9 +3,6 @@ __pycache__/
 *.py[codz]
 *$py.class
 
-# vscode
-.vscode/
-
 # data files
 tmp/
 

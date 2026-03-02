@@ -1,0 +1,30 @@
+{
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        // run `ruff format` on save
+        "editor.formatOnSave": true,
+        // run `ruff fix` on save, and organize imports
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        },
+    },
+    // set python & ruff paths to the repo virtual environment
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python3",
+    "ruff.interpreter": ["${workspaceFolder}/.venv/bin/python3"],
+    // get ruff configuration from pyproject.toml
+    "ruff.configuration": "${workspaceFolder}/pyproject.toml",
+    // prefer/use the ruff rules in pyproject.toml
+    "ruff.configurationPreference": "filesystemFirst",
+    // enable mypy to actually run
+    "mypy-type-checker.path": ["${workspaceFolder}/.venv/bin/mypy"],
+    // prefer using mypy from the repo venv
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+    // configure testing with pytest
+    "python.testing.pytestArgs": [
+        "-vv", "./test",
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "explorer.excludeGitIgnore": true,
+}
