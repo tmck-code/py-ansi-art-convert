@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
-mypy .
-ruff check .
+ruff check --show-files .
+ruff check --color always .
 
+mypy .
