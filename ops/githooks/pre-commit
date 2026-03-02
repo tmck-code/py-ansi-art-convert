@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-fpaths=$(git diff --name-only --cached --diff-filter=ACM | grep '.py' | tr '\n' ' ') || exit 0
+mypy .
+ruff check .
 
-mypy $fpaths
-ruff check $fpaths
