@@ -8,7 +8,7 @@ DEFAULT_WIDTH = 80
 DEFAULT_FONT_NAME = 'IBM VGA'
 DEFAULT_ENCODING = SupportedEncoding.UTF_8
 
-DEFAULT_SAUCE_RECORD_KWARGS = {
+DEFAULT_SAUCE_RECORD_KWARGS: dict[str, Any] = {
     'ID': 'SAUCE',
     'version': '00',
     'title': 'Test',
@@ -27,7 +27,7 @@ DEFAULT_SAUCE_RECORD_KWARGS = {
     'tinfo_s': DEFAULT_FONT_NAME,
 }
 
-DEFAULT_EXTENDED_KWARGS = {
+DEFAULT_EXTENDED_KWARGS: dict[str, Any] = {
     'fpath': '/test/file.ans',
     'encoding': DEFAULT_ENCODING,
     'comments_data': [],
@@ -40,37 +40,14 @@ DEFAULT_EXTENDED_KWARGS = {
 }
 
 
-def create_mock_sauce(sauce_record_kwargs: dict[str, Any], extended_kwargs: dict[str, Any]) -> SauceRecordExtended:
+def create_mock_sauce(
+    sauce_record_kwargs: dict[str, Any] = {}, extended_kwargs: dict[str, Any] = {}
+) -> SauceRecordExtended:
     return SauceRecordExtended(
         sauce=SauceRecord(
-            ID='SAUCE',
-            version='00',
-            title='Test',
-            author='Author',
-            group='Group',
-            date='20240101',
-            filesize=0,
-            data_type=1,
-            file_type=1,
-            tinfo1=sauce_record_kwargs.get('width', DEFAULT_WIDTH),
-            tinfo2=0,
-            tinfo3=0,
-            tinfo4=0,
-            comments=0,
-            flags=0 if not extended_kwargs.get('ice_colours', False) else 1,
-            tinfo_s=sauce_record_kwargs.get('font_name', DEFAULT_FONT_NAME),
-            **{k: v for k, v in sauce_record_kwargs.items() if k not in {'tinfo_s', 'flags'}},
+            **(DEFAULT_SAUCE_RECORD_KWARGS | sauce_record_kwargs),
         ),
-        fpath='/test/file.ans',
-        encoding=SupportedEncoding.CP437,
-        comments_data=[],
-        font={'name': sauce_record_kwargs.get('font_name', DEFAULT_FONT_NAME)},
-        tinfo={},
-        aspect_ratio='',
-        letter_spacing='',
-        non_blink_mode=extended_kwargs.get('ice_colours', False),
-        ice_colours=extended_kwargs.get('ice_colours', False),
-        **extended_kwargs,
+        **(DEFAULT_EXTENDED_KWARGS | extended_kwargs),
     )
 
 
@@ -92,7 +69,11 @@ def create_tokeniser(
     return Tokeniser(
         sauce=create_mock_sauce(sauce_record_kwargs=sauce_record_kwargs, extended_kwargs=extended_kwargs),
         data=data,
-        **(DEFAULT_TOKENISER_KWARGS | tokeniser_kwargs),
+        **(
+            DEFAULT_TOKENISER_KWARGS
+            | {'ice_colours': extended_kwargs.get('ice_colours', sauce_record_kwargs.get('ice_colours', False))}
+            | tokeniser_kwargs
+        ),
     )
 
 

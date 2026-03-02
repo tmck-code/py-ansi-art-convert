@@ -17,41 +17,7 @@ from ansi_art_convert.convert import (
     get_glyph_offset,
 )
 from ansi_art_convert.encoding import SupportedEncoding
-from ansi_art_convert.sauce import SauceRecord, SauceRecordExtended
-
-
-def create_mock_sauce(width: int = 80, ice_colours: bool = False, font_name: str = 'IBM VGA') -> SauceRecordExtended:
-    'Helper to create mock SAUCE records for testing'
-
-    return SauceRecordExtended(
-        fpath='/test/file.ans',
-        encoding=SupportedEncoding.CP437,
-        sauce=SauceRecord(
-            ID='SAUCE',
-            version='00',
-            title='Test',
-            author='Author',
-            group='Group',
-            date='20240101',
-            filesize=0,
-            data_type=1,
-            file_type=1,
-            tinfo1=width,
-            tinfo2=0,
-            tinfo3=0,
-            tinfo4=0,
-            comments=0,
-            flags=0 if not ice_colours else 1,
-            tinfo_s=font_name,
-        ),
-        comments_data=[],
-        font={'name': font_name},
-        tinfo={},
-        aspect_ratio='',
-        letter_spacing='',
-        non_blink_mode=ice_colours,
-        ice_colours=ice_colours,
-    )
+from test.helper import create_mock_sauce
 
 
 class TestGetGlyphOffset:
@@ -66,7 +32,7 @@ class TestTokeniserInit:
     'Test Tokeniser initialization'
 
     def test_tokeniser_sauce_width(self) -> None:
-        sauce = create_mock_sauce(width=67)
+        sauce = create_mock_sauce(sauce_record_kwargs={'tinfo1': 67})
         tokeniser = Tokeniser(
             fpath='/test/file.ans',
             sauce=sauce,
@@ -76,7 +42,7 @@ class TestTokeniserInit:
         assert tokeniser.width == sauce.sauce.tinfo1
 
     def test_tokeniser_custom_width(self) -> None:
-        sauce = create_mock_sauce(width=40)
+        sauce = create_mock_sauce(sauce_record_kwargs={'tinfo1': 40})
         tokeniser = Tokeniser(
             fpath='/test/file.ans',
             sauce=sauce,
@@ -87,7 +53,8 @@ class TestTokeniserInit:
         assert tokeniser.width == 100  # Explicit width overrides sauce
 
     def test_tokeniser_ice_colours(self) -> None:
-        sauce = create_mock_sauce(ice_colours=True)
+        sauce = create_mock_sauce(extended_kwargs={'non_blink_mode': True})
+
         tokeniser = Tokeniser(
             fpath='/test/file.ans',
             sauce=sauce,
