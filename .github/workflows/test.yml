@@ -16,7 +16,7 @@ jobs:
         -v ${{ github.workspace }}/README.md:/app/README.md
         -v ${{ github.workspace }}/LICENSE:/app/LICENSE
         ghcr.io/tmck-code/py-ansi-art-convert:dev
-        sh -c "python3 -m build --sdist --wheel && twine check dist/*"
+        uv build
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -45,3 +45,19 @@ jobs:
         -v ${{ github.workspace }}/pyproject.toml:/app/pyproject.toml
         ghcr.io/tmck-code/py-ansi-art-convert:dev
         mypy -p ansi_art_convert
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Run tests with pytest
+      run: >
+        docker run --rm
+        --pull missing
+        -u root
+        -v ${{ github.workspace }}/ansi_art_convert/:/app/ansi_art_convert/
+        -v ${{ github.workspace }}/test/:/app/test/
+        -v ${{ github.workspace }}/pyproject.toml:/app/pyproject.toml
+        -v ${{ github.workspace }}/test/:/app/test/
+        ghcr.io/tmck-code/py-ansi-art-convert:dev
+        pytest -vv test/
