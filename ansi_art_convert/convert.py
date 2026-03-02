@@ -675,7 +675,7 @@ class Renderer:
     def __post_init__(self) -> None:
         self.width = self.tokeniser.width
 
-    def split_text_token(self, t: TextToken, remainder: int) -> Iterator[ANSIToken]:
+    def split_text_token(self, t: TextToken | CP437Token, remainder: int) -> Iterator[ANSIToken]:
         s = str(t)
         for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
             yield t.__class__(value=chunk, offset=t.offset)
@@ -754,7 +754,7 @@ class Renderer:
                 dprint(
                     f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}'
                 )
-                if not isinstance(t, TextToken):
+                if not isinstance(t, (TextToken, CP437Token)):
                     continue
                 for chunk in self.split_text_token(t, self.width - self._currLength):
                     dprint(
