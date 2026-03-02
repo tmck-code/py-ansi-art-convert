@@ -566,15 +566,16 @@ class TestRendererRender:
         assert result == expected
 
     def test_render_width_40(self) -> None:
-        renderer = create_renderer(data='The quick brown fox jumps over the lazy dog', width=40)
+        data = 'The quick brown fox jumps over the lazy dog'
 
-        result = renderer.render()
-        expected = (
-            TextToken._translate_chars('The quick brown fox jumps over the lazy', renderer.tokeniser.glyph_offset)
-            + '\x1b[0m\n'
-            + TextToken._translate_chars(' dog', renderer.tokeniser.glyph_offset)
-            + '\x1b[0m'
-        )
+        renderer = create_renderer(data=data, width=40)
+        renderer.tokeniser.glyph_offset = 0
+
+        result = list(renderer.iter_lines())
+        expected = [
+            TextToken._translate_chars(data[:40], renderer.tokeniser.glyph_offset) + '\x1b[0m\n',
+            TextToken._translate_chars(data[40:], renderer.tokeniser.glyph_offset) + '\x1b[0m',
+        ]
         assert result == expected
 
 
