@@ -671,9 +671,11 @@ class Renderer:
     _currBG: ColorBGToken | None = field(default=None, repr=False)
     _currSGR: ANSIToken | None = field(default=None, repr=False)
     width: int = field(init=False)
+    _grid: list[list[ANSIToken]] = field(init=False)
 
     def __post_init__(self) -> None:
         self.width = self.tokeniser.width
+        self._grid = list(list())
 
     def split_text_token(self, t: TextToken | CP437Token, remainder: int) -> Iterator[ANSIToken]:
         s = str(t)
@@ -797,6 +799,12 @@ class Renderer:
                         self._currSGR = t
         if self._currLine:
             yield self._currLine + [SGRToken(value='0'), EOFToken(value='')]
+
+    def grid(self) -> list[list[ANSIToken]]:
+        'Generate a grid of tokens representing the final output, with line breaks and resets.'
+        for line in self.gen_lines():
+            self._grid.append(line)
+        return self._grid
 
     def iter_lines(self) -> Iterator[str]:
         for i, line in enumerate(self.gen_lines()):
