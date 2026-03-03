@@ -639,3 +639,121 @@ class TestRendererEdgeCases:
             + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m'
         )
         assert result == expected
+
+
+class TestGridSaveRestoreCursor:
+    'Test SaveCursorPosition (ESC[s) and RestoreCursorPosition (ESC[u) support'
+
+    def setup_method(self) -> None:
+        self.renderer = create_renderer(data='')
+        self.offset = 0
+        self.renderer.tokeniser.glyph_offset = self.offset
+
+        self.save, self.restore = '\x1b[s', '\x1b[u'
+
+    def test_tokenise_save(self) -> None:
+        self.renderer.tokeniser.data = f'Hello{self.save} World'
+
+        result = self.renderer.grid()
+        expected = [
+            [
+                TextToken(value='Hello', offset=self.offset),
+                ControlToken(value=self.save),
+                TextToken(value=' World', offset=self.offset),
+                SGRToken(value='0'),
+                EOFToken(value=''),
+            ]
+        ]
+        assert result == expected
+
+    def test_tokenise_save_restore(self) -> None:
+        # Hello\x1b[s World\x1b[u! > Hello!World
+        self.renderer.tokeniser.data = f'Hello{self.save} World{self.restore}!'
+
+        result = self.renderer.grid()
+        expected = [
+            [
+                TextToken(value='Hello', offset=self.offset),
+                ControlToken(value=self.save),
+                TextToken(value=' World', offset=self.offset),
+                ControlToken(value=self.restore),
+                TextToken(value='!', offset=self.offset),
+                SGRToken(value='0'),
+                EOFToken(value=''),
+            ]
+        ]
+        assert result == expected
+
+    def test_tokenise_restore(self) -> None:
+        # Hello\x1b[s World\x1b[u! > Hello!World
+        self.renderer.tokeniser.data = f'Hello{self.save} World{self.restore}!'
+
+        result = self.renderer.grid()
+        expected = [
+            [
+                TextToken(value='Hello', offset=self.offset),
+                ControlToken(value=self.save),
+                TextToken(value=' World', offset=self.offset),
+                ControlToken(value=self.restore),
+                TextToken(value='!', offset=self.offset),
+                SGRToken(value='0'),
+                EOFToken(value=''),
+            ]
+        ]
+        assert result == expected
+
+    def test_newlines(self) -> None:
+        data = ''.join([
+            f'AAAA{self.save}\n',
+            f'{self.restore}▓▒░',
+        ])
+        self.renderer.tokeniser.data = data
+        self.renderer.tokeniser.glyph_offset = 0
+
+        result = self.renderer.grid()
+        expected = [
+            [
+                TextToken(value='AAAA', offset=0),
+                ControlToken(value='\x1b[s'),
+                SGRToken(value='0'),
+            ],
+            [
+                ControlToken(value='\x1b[u'),
+                TextToken(value='▓▒░', offset=0),
+                SGRToken(value='0'),
+                EOFToken(value=''),
+            ],
+        ]
+
+        assert result == expected
+
+    def test_width(self) -> None:
+        data = ''.join([
+            f'AAAA{self.save}\n',
+            f'{self.restore}▓▒░{self.save}\n',
+            f'{self.restore}XXXXXXX\n',
+        ])
+        self.renderer.tokeniser.data = data
+        self.renderer.tokeniser.width = 20
+        self.renderer.tokeniser.glyph_offset = 0
+
+        result = self.renderer.grid()
+        expected = [
+            [
+                TextToken(value='AAAA', offset=0),
+                ControlToken(value='\x1b[s'),
+                SGRToken(value='0'),
+            ],
+            [
+                ControlToken(value='\x1b[u'),
+                TextToken(value='▓▒░', offset=0),
+                ControlToken(value='\x1b[s'),
+                SGRToken(value='0'),
+            ],
+            [
+                ControlToken(value='\x1b[u'),
+                TextToken(value='XXXXXXX', offset=0),
+                SGRToken(value='0'),
+            ],
+        ]
+        assert result == expected
