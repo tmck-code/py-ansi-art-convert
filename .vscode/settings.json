@@ -10,21 +10,18 @@
         },
     },
     // set python & ruff paths to the repo virtual environment
-    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python3",
-    "ruff.interpreter": ["${workspaceFolder}/.venv/bin/python3"],
-    // get ruff configuration from pyproject.toml
-    "ruff.configuration": "${workspaceFolder}/pyproject.toml",
-    // prefer/use the ruff rules in pyproject.toml
-    "ruff.configurationPreference": "filesystemFirst",
+    "python.defaultInterpreterPath":    "${workspaceFolder}/.venv/bin/python3",
+    // use/prefer ruff configuration from pyproject.toml
+    "ruff.interpreter":                 ["${workspaceFolder}/.venv/bin/python3"],
+    "ruff.configuration":               "${workspaceFolder}/pyproject.toml",
+    "ruff.configurationPreference":     "filesystemFirst",
     // enable mypy to actually run
-    "mypy-type-checker.path": ["${workspaceFolder}/.venv/bin/mypy"],
-    // prefer using mypy from the repo venv
+    "mypy-type-checker.path":           ["${workspaceFolder}/.venv/bin/mypy"],
+    "mypy-type-checker.interpreter":    ["${workspaceFolder}/.venv/bin/python3"],
     "mypy-type-checker.importStrategy": "fromEnvironment",
     // configure testing with pytest
-    "python.testing.pytestArgs": [
-        "-vv", "./test",
-    ],
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
-    "explorer.excludeGitIgnore": true,
+    "python.testing.pytestArgs":        ["-vv", "./test"],
+    "python.testing.pytestEnabled":     true,
+    "python.testing.unittestEnabled":   false,
+    "makefile.configureOnOpen":         false,
 }
