@@ -292,3 +292,100 @@ class TestTokeniserTokenise:
             CP437Token(value='C', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected
+
+
+class TestSaveRestoreCursor:
+    'Test SaveCursorPosition (ESC[s) and RestoreCursorPosition (ESC[u) support'
+
+    def setup_method(self) -> None:
+        self.sauce = create_mock_sauce()
+        self.tokeniser = Tokeniser(
+            fpath='/test/file.ans',
+            sauce=self.sauce,
+            data='',
+            font_name='IBM VGA',
+        )
+        self.offset = 0
+        self.tokeniser.glyph_offset = self.offset
+
+        self.save, self.restore = '\x1b[s', '\x1b[u'
+
+    def test_tokenise_save(self) -> None:
+        self.tokeniser.data = f'Hello{self.save} World'
+
+        result = list(self.tokeniser.tokenise())
+        expected = [
+            CP437Token(value='Hello', offset=self.offset),
+            ControlToken(value=self.save),
+            CP437Token(value=' World', offset=self.offset),
+        ]
+        assert result == expected
+
+    def test_tokenise_save_restore(self) -> None:
+        # Hello\x1b[s World\x1b[u! > Hello!World
+        self.tokeniser.data = f'Hello{self.save} World{self.restore}!'
+
+        result = list(self.tokeniser.tokenise())
+        expected = [
+            CP437Token(value='Hello', offset=self.offset),
+            ControlToken(value=self.save),
+            CP437Token(value=' World', offset=self.offset),
+            ControlToken(value=self.restore),
+            CP437Token(value='!', offset=self.offset),
+        ]
+        assert result == expected
+
+    def test_tokenise_restore(self) -> None:
+        # Hello\x1b[s World\x1b[u! > Hello!World
+        self.tokeniser.data = f'Hello{self.save} World{self.restore}!'
+
+        result = list(self.tokeniser.tokenise())
+        expected = [
+            CP437Token(value='Hello', offset=self.offset),
+            ControlToken(value=self.save),
+            CP437Token(value=' World', offset=self.offset),
+            ControlToken(value=self.restore),
+            CP437Token(value='!', offset=self.offset),
+        ]
+        assert result == expected
+
+    def test_newlines(self) -> None:
+        data = ''.join([
+            'AAAA\x1b[s\n',
+            '\x1b[u▓▒░',
+        ])
+        self.tokeniser.data = data
+
+        result = list(self.tokeniser.tokenise())
+        expected = [
+            CP437Token(value='AAAA', offset=self.offset),
+            ControlToken(value=self.save),
+            NewLineToken(value='\n'),
+            ControlToken(value=self.restore),
+            CP437Token(value='▓▒░', offset=self.offset),
+        ]
+        assert result == expected
+
+    def test_width(self) -> None:
+        data = ''.join([
+            'AAAA\x1b[s\n',
+            '\x1b[u▓▒░\x1b[s\n',
+            '\x1b[uXXXXXXX\n',
+        ])
+        self.tokeniser.data = data
+        self.tokeniser.width = 7
+
+        result = list(self.tokeniser.tokenise())
+        expected = [
+            CP437Token(value='AAAA', offset=self.offset),
+            ControlToken(value=self.save),
+            NewLineToken(value='\n'),
+            ControlToken(value=self.restore),
+            CP437Token(value='▓▒░', offset=self.offset),
+            ControlToken(value=self.save),
+            NewLineToken(value='\n'),
+            ControlToken(value=self.restore),
+            CP437Token(value='XXXXXXX', offset=self.offset),
+            NewLineToken(value='\n'),
+        ]
+        assert result == expected
