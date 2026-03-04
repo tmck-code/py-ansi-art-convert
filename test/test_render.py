@@ -6,7 +6,6 @@ from ansi_art_convert.convert import (
     Color8FGToken,
     ControlToken,
     EOFToken,
-    NewLineToken,
     Renderer,
     SGRToken,
     TextToken,
@@ -102,13 +101,7 @@ class TestGenLines:
         self.renderer.tokeniser.data = 'Hello'
 
         result = list(self.renderer.gen_lines())
-        expected = [
-            [
-                TextToken(value='Hello', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
-            ]
-        ]
+        expected = [[TextToken(value='Hello', offset=self.offset)]]
         assert result == expected
 
     def test_gen_lines_text_with_newline(self) -> None:
@@ -116,16 +109,8 @@ class TestGenLines:
 
         result = list(self.renderer.gen_lines())
         expected = [
-            [
-                TextToken(value='Hello', offset=self.offset),
-                SGRToken(value='0'),
-                NewLineToken(value='\n'),
-            ],
-            [
-                TextToken(value='World', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
-            ],
+            [TextToken(value='Hello', offset=self.offset)],
+            [TextToken(value='World', offset=self.offset)],
         ]
         assert result == expected
 
@@ -134,11 +119,7 @@ class TestGenLines:
 
         lines = list(self.renderer.gen_lines())
         expected = [
-            [
-                TextToken(value='A' * 80, offset=self.offset),
-                SGRToken(value='0'),
-                NewLineToken(value='\n'),
-            ],
+            [TextToken(value='A' * 80, offset=self.offset)],
         ]
         assert lines == expected
 
@@ -153,16 +134,8 @@ class TestGenLines:
 
         result = list(self.renderer.gen_lines())
         expected = [
-            [
-                TextToken(value='A' * 80, offset=self.offset),
-                SGRToken(value='0'),
-                NewLineToken(value='\n'),
-            ],
-            [
-                TextToken(value='A' * 20, offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
-            ],
+            [TextToken(value='A' * 80, offset=self.offset)],
+            [TextToken(value='A' * 20, offset=self.offset)],
         ]
 
         assert result == expected
@@ -179,8 +152,6 @@ class TestGenLines:
                 SGRToken(value='0'),
                 Color8FGToken(value='37'),
                 Color8BGToken(value='40'),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -196,8 +167,6 @@ class TestGenLines:
                 Color8FGToken(value='31'),
                 Color8BGToken(value='40'),
                 TextToken(value='A' * 80, offset=self.offset),
-                SGRToken(value='0'),
-                NewLineToken(value='\n'),
             ],
             [
                 Color8FGToken(value='31'),
@@ -206,8 +175,6 @@ class TestGenLines:
                 SGRToken(value='0'),
                 Color8FGToken(value='37'),
                 Color8BGToken(value='40'),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ],
         ]
         assert result == expected
@@ -225,8 +192,6 @@ class TestGenLines:
                 Color8FGToken(value='37'),
                 Color8BGToken(value='40'),
                 TextToken(value='Normal', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -246,8 +211,6 @@ class TestGenLines:
                 Color8FGToken(value='34'),
                 Color8BGToken(value='40'),
                 TextToken(value='Blue', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -268,8 +231,6 @@ class TestGenLines:
                 TextToken(value='Hello', offset=self.offset),
                 ControlToken(value='\x1b[5C'),
                 TextToken(value='World', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -283,8 +244,6 @@ class TestGenLines:
                 TextToken(value='Hello', offset=self.offset),
                 ControlToken(value='\x1b[10;20H'),
                 TextToken(value='World', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -295,16 +254,8 @@ class TestGenLines:
 
         result = list(self.renderer.gen_lines())
         expected = [
-            [
-                TextToken(value='HelloWorldThisIsATes', offset=self.offset),
-                SGRToken(value='0'),
-                NewLineToken(value='\n'),
-            ],
-            [
-                TextToken(value='t', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
-            ],
+            [TextToken(value='HelloWorldThisIsATes', offset=self.offset)],
+            [TextToken(value='t', offset=self.offset)],
         ]
         assert result == expected
 
@@ -320,8 +271,6 @@ class TestGenLines:
                 SGRToken(value='0'),
                 Color8FGToken(value='37'),
                 Color8BGToken(value='40'),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -336,8 +285,6 @@ class TestGenLines:
                 Color8FGToken(value='31'),
                 Color8BGToken(value='44'),
                 TextToken(value='Text', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -356,7 +303,8 @@ class TestIterLines:
 
         result = list(self.renderer.iter_lines())
         expected = [
-            TextToken._translate_chars('Hello', self.offset) + '\x1b[0m',
+            TextToken._translate_chars('Hello', self.offset) + '\x1b[0m\n',
+            str(EOFToken(value='')),
         ]
 
         assert result == expected
@@ -367,7 +315,8 @@ class TestIterLines:
         result = list(self.renderer.iter_lines())
         expected = [
             TextToken._translate_chars('Hello', self.offset) + '\x1b[0m\n',
-            TextToken._translate_chars('World', self.offset) + '\x1b[0m',
+            TextToken._translate_chars('World', self.offset) + '\x1b[0m\n',
+            str(EOFToken(value='')),
         ]
         assert result == expected
 
@@ -376,7 +325,8 @@ class TestIterLines:
 
         result = list(self.renderer.iter_lines())
         expected = [
-            '\x1b[31m\x1b[40m' + TextToken._translate_chars('Red', self.offset) + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m',
+            '\x1b[31m\x1b[40m' + TextToken._translate_chars('Red', self.offset) + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n',
+            str(EOFToken(value='')),
         ]
         assert result == expected
 
@@ -385,7 +335,8 @@ class TestIterLines:
 
         result = list(self.renderer.iter_lines())
         expected = [
-            TextToken._translate_chars('Test', self.offset) + '\x1b[0m',
+            TextToken._translate_chars('Test', self.offset) + '\x1b[0m\n',
+            str(EOFToken(value='')),
         ]
         assert result == expected
 
@@ -402,7 +353,7 @@ class TestRender:
         self.renderer.tokeniser.data = 'Hello World'
 
         result = self.renderer.render()
-        expected = TextToken._translate_chars('Hello World', self.offset) + '\x1b[0m'
+        expected = TextToken._translate_chars('Hello World', self.offset) + '\x1b[0m\n'
         assert result == expected
 
     def test_render_with_newlines(self) -> None:
@@ -413,7 +364,7 @@ class TestRender:
             TextToken._translate_chars('Hello', self.offset)
             + '\x1b[0m\n'
             + TextToken._translate_chars('World', self.offset)
-            + '\x1b[0m'
+            + '\x1b[0m\n'
         )
         assert result == expected
 
@@ -426,20 +377,16 @@ class TestRender:
             + TextToken._translate_chars('Red', self.offset)
             + '\x1b[32m\x1b[40m'
             + TextToken._translate_chars('Green', self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m'
+            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
         )
         assert result == expected
 
     def test_render_long_text_wraps(self) -> None:
         self.renderer.tokeniser.data = 'A' * 100
+        self.renderer.width = 100
 
         result = self.renderer.render()
-        expected = (
-            TextToken._translate_chars('A' * 80, self.offset)
-            + '\x1b[0m\n'
-            + TextToken._translate_chars('A' * 20, self.offset)
-            + '\x1b[0m'
-        )
+        expected = TextToken._translate_chars('A' * 100, self.offset) + '\x1b[0m\n'
         assert result == expected
 
     def test_render_empty_input(self) -> None:
@@ -462,13 +409,13 @@ class TestRender:
         expected = (
             '\x1b[31m\x1b[40m'
             + TextToken._translate_chars('╔══════════════════╗', self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
-            + '\x1b[37m\x1b[40m\x1b[32m\x1b[40m'
+            + '\x1b[0m\x1b[37m\x1b[40m'
+            + '\x1b[0m\n\x1b[37m\x1b[40m\x1b[32m\x1b[40m'
             + TextToken._translate_chars('║  ANSI Art Test   ║', self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
-            + '\x1b[37m\x1b[40m\x1b[34m\x1b[40m'
+            + '\x1b[0m\x1b[37m\x1b[40m'
+            + '\x1b[0m\n\x1b[37m\x1b[40m\x1b[34m\x1b[40m'
             + TextToken._translate_chars('╚══════════════════╝', self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m'
+            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
         )
         assert result == expected
 
@@ -479,10 +426,9 @@ class TestRender:
         expected = (
             '\x1b[31m\x1b[40m'
             + TextToken._translate_chars('A' * 80, self.offset)
-            + '\x1b[0m\n'
-            + '\x1b[31m\x1b[40m'
+            + '\x1b[0m\n\x1b[31m\x1b[40m'
             + TextToken._translate_chars('A' * 10, self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m'
+            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
         )
         assert result == expected
 
@@ -494,7 +440,7 @@ class TestRender:
         expected = (
             '\x1b[1m\x1b[91m\x1b[104m'
             + TextToken._translate_chars('Bright Text', self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m'
+            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
         )
         assert result == expected
 
@@ -502,7 +448,7 @@ class TestRender:
         self.renderer.tokeniser.data = 'Clean'
 
         result = self.renderer.render()
-        expected = TextToken._translate_chars('Clean', self.offset) + '\x1b[0m'
+        expected = TextToken._translate_chars('Clean', self.offset) + '\x1b[0m\n'
         assert result == expected
 
     def test_render_handles_control_sequences(self) -> None:
@@ -515,7 +461,7 @@ class TestRender:
             + TextToken._translate_chars('Middle', self.offset)
             + ' ' * 5
             + TextToken._translate_chars('End', self.offset)
-            + '\x1b[0m'
+            + '\x1b[0m\n'
         )
         assert result == expected
 
@@ -530,7 +476,7 @@ class TestRender:
             + TextToken._translate_chars('Green', self.offset)
             + '\x1b[0m\x1b[37m\x1b[40m\x1b[34m\x1b[40m'
             + TextToken._translate_chars('Blue', self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m'
+            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
         )
         assert result == expected
 
@@ -556,7 +502,8 @@ class TestRender:
         result = list(self.renderer.iter_lines())
         expected = [
             TextToken._translate_chars(data[:40], self.offset) + '\x1b[0m\n',
-            TextToken._translate_chars(data[40:], self.offset) + '\x1b[0m',
+            TextToken._translate_chars(data[40:], self.offset) + '\x1b[0m\n',
+            '',
         ]
         assert result == expected
 
@@ -573,7 +520,7 @@ class TestRendererEdgeCases:
         self.renderer.tokeniser.data = 'A'
 
         result = self.renderer.render()
-        expected = TextToken._translate_chars('A', self.offset) + '\x1b[0m'
+        expected = TextToken._translate_chars('A', self.offset) + '\x1b[0m\n'
         assert result == expected
 
     def test_width_1(self) -> None:
@@ -604,7 +551,7 @@ class TestRendererEdgeCases:
             TextToken._translate_chars('X' * 5, self.offset) + '\x1b[0m',
             TextToken._translate_chars('X' * 5, self.offset) + '\x1b[0m',
             TextToken._translate_chars('X' * 5, self.offset) + '\x1b[0m',
-            TextToken._translate_chars('X' * 2, self.offset) + '\x1b[0m',
+            TextToken._translate_chars('X' * 2, self.offset) + '\x1b[0m\n',
         ])
         assert result == expected
 
@@ -618,7 +565,7 @@ class TestRendererEdgeCases:
             + '\x1b[0m\n'
             + '\x1b[0m\n'
             + TextToken._translate_chars('B', self.offset)
-            + '\x1b[0m'
+            + '\x1b[0m\n'
         )
         assert result == expected
 
@@ -626,7 +573,7 @@ class TestRendererEdgeCases:
         self.renderer.tokeniser.data = '\x1b[31m\x1b[44m'
 
         result = self.renderer.render()
-        expected = '\x1b[31m\x1b[40m\x1b[31m\x1b[44m\x1b[0m'
+        expected = '\x1b[31m\x1b[40m\x1b[31m\x1b[44m\x1b[0m\n'
         assert result == expected
 
     def test_mixed_ansi_sequences(self) -> None:
@@ -636,7 +583,7 @@ class TestRendererEdgeCases:
         expected = (
             '\x1b[1m\x1b[97m\x1b[40m\x1b[31m\x1b[40m\x1b[31m\x1b[44m'
             + TextToken._translate_chars('Styled', self.offset)
-            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m'
+            + '\x1b[0m\x1b[37m\x1b[40m\x1b[0m\n'
         )
         assert result == expected
 
@@ -662,8 +609,6 @@ class TestGridSaveRestoreCursor:
                 TextToken(value='Hello', offset=self.offset),
                 self.save_token,
                 TextToken(value=' World', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -680,8 +625,6 @@ class TestGridSaveRestoreCursor:
                 TextToken(value=' World', offset=self.offset),
                 self.restore_token,
                 TextToken(value='!', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -698,8 +641,6 @@ class TestGridSaveRestoreCursor:
                 TextToken(value=' World', offset=self.offset),
                 self.restore_token,
                 TextToken(value='!', offset=self.offset),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ]
         ]
         assert result == expected
@@ -717,13 +658,10 @@ class TestGridSaveRestoreCursor:
             [
                 TextToken(value='AAAA', offset=0),
                 self.save_token,
-                SGRToken(value='0'),
             ],
             [
                 self.restore_token,
                 TextToken(value='▓▒░', offset=0),
-                SGRToken(value='0'),
-                EOFToken(value=''),
             ],
         ]
 
@@ -744,18 +682,15 @@ class TestGridSaveRestoreCursor:
             [
                 TextToken(value='AAAA', offset=0),
                 self.save_token,
-                SGRToken(value='0'),
             ],
             [
                 self.restore_token,
                 TextToken(value='▓▒░', offset=0),
                 self.save_token,
-                SGRToken(value='0'),
             ],
             [
                 self.restore_token,
                 TextToken(value='XXXXXXX', offset=0),
-                SGRToken(value='0'),
             ],
         ]
         assert result == expected

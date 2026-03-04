@@ -692,7 +692,6 @@ class Renderer:
     def gen_lines(self) -> Iterator[list[ANSIToken]]:
         'Split tokens into lines at width, or each newline char'
 
-        newLine: list[ANSIToken] = [NewLineToken(value='\n')]
         skips = 0
 
         for t, tNext in pairwise(chain(self.tokeniser.tokenise(), [EndOfFile()])):
@@ -702,8 +701,6 @@ class Renderer:
             dprint(
                 f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}'
             )
-            if isinstance(t, ControlToken) and t.subtype in ('H', 's'):
-                newLine = []
 
             if isinstance(t, Color8Token):
                 tokens = list(t.generate_tokens(self._currFG, self._currBG))
@@ -738,7 +735,9 @@ class Renderer:
                 dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
                 if self._currLength + len(str(t)) == self.width:
                     dprint(f'Exact fit for token: {t!r}, yielding line with reset and newline')
-                    yield self._currLine + [t, SGRToken(value='0')] + newLine
+
+                    yield self._currLine + [t]
+
                     self._currLine, self._currLength = [], 0
                     self._add_current_colors()
                     continue
@@ -751,20 +750,14 @@ class Renderer:
                     self._currLength += len(str(t))
                     continue
 
-                dprint(
-                    f'>> Token exceeds line width, splitting needed for token: {t!r}, current line length: {self._currLength}, token length: {len(str(t))}'
-                )
                 if not isinstance(t, (TextToken, CP437Token)):
                     continue
                 for chunk in self.split_text_token(t, self.width - self._currLength):
-                    dprint(
-                        f'>> Adding chunk to current line: {chunk}, chunk length: {len(str(chunk))}, new line length would be: {self._currLength + len(str(chunk))}'
-                    )
                     self._currLine.append(chunk)
                     self._currLength += len(str(chunk))
 
                     if self._currLength == self.width:
-                        yield self._currLine + [SGRToken(value='0')] + newLine
+                        yield self._currLine
 
                         self._currLine, self._currLength = [], 0
                         self._add_current_colors()
@@ -783,10 +776,9 @@ class Renderer:
                     self._currLine
                 ) < self.width:
                     continue
-                yield self._currLine + [SGRToken(value='0')] + newLine
+                yield self._currLine
                 self._currLine, self._currLength = [], 0
                 self._add_current_colors()
-
             else:
                 dprint(f'Other token: {t!r}')
                 self._currLine.append(t)
@@ -796,7 +788,7 @@ class Renderer:
                     else:
                         self._currSGR = t
         if self._currLine:
-            yield self._currLine + [SGRToken(value='0'), EOFToken(value='')]
+            yield self._currLine
 
     def grid(self) -> list[list[ANSIToken]]:
         'Generate a grid of tokens representing the final output, with line breaks and resets.'
@@ -806,7 +798,8 @@ class Renderer:
         for i, line in enumerate(self.gen_lines()):
             if DEBUG:
                 print(f'\n\x1b[30;103m[{i + 1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
-            yield ''.join(map(str, line))
+            yield ''.join(map(str, line)) + '\x1b[0m\n'
+        yield str(EOFToken(value=''))
 
     def render(self) -> str:
         'Render tokens into a string with proper line wrapping.'
