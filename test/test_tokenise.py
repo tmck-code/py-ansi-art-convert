@@ -309,6 +309,7 @@ class TestSaveRestoreCursor:
         self.tokeniser.glyph_offset = self.offset
 
         self.save, self.restore = '\x1b[s', '\x1b[u'
+        self.save_token, self.restore_token = ControlToken(value=self.save), ControlToken(value=self.restore)
 
     def test_tokenise_save(self) -> None:
         self.tokeniser.data = f'Hello{self.save} World'
@@ -351,26 +352,26 @@ class TestSaveRestoreCursor:
 
     def test_newlines(self) -> None:
         data = ''.join([
-            'AAAA\x1b[s\n',
-            '\x1b[u▓▒░',
+            f'AAAA{self.save}\n',
+            f'{self.restore}▓▒░',
         ])
         self.tokeniser.data = data
 
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='AAAA', offset=self.offset),
-            ControlToken(value=self.save),
+            self.save_token,
             NewLineToken(value='\n'),
-            ControlToken(value=self.restore),
+            self.restore_token,
             CP437Token(value='▓▒░', offset=self.offset),
         ]
         assert result == expected
 
     def test_width(self) -> None:
         data = ''.join([
-            'AAAA\x1b[s\n',
-            '\x1b[u▓▒░\x1b[s\n',
-            '\x1b[uXXXXXXX\n',
+            f'AAAA{self.save}\n',
+            f'{self.restore}▓▒░{self.save}\n',
+            f'{self.restore}XXXXXXX\n',
         ])
         self.tokeniser.data = data
         self.tokeniser.width = 7
@@ -378,13 +379,13 @@ class TestSaveRestoreCursor:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='AAAA', offset=self.offset),
-            ControlToken(value=self.save),
+            self.save_token,
             NewLineToken(value='\n'),
-            ControlToken(value=self.restore),
+            self.restore_token,
             CP437Token(value='▓▒░', offset=self.offset),
-            ControlToken(value=self.save),
+            self.save_token,
             NewLineToken(value='\n'),
-            ControlToken(value=self.restore),
+            self.restore_token,
             CP437Token(value='XXXXXXX', offset=self.offset),
             NewLineToken(value='\n'),
         ]

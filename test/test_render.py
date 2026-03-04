@@ -650,6 +650,8 @@ class TestGridSaveRestoreCursor:
         self.renderer.tokeniser.glyph_offset = self.offset
 
         self.save, self.restore = '\x1b[s', '\x1b[u'
+        self.save_token = ControlToken(value=self.save)
+        self.restore_token = ControlToken(value=self.restore)
 
     def test_tokenise_save(self) -> None:
         self.renderer.tokeniser.data = f'Hello{self.save} World'
@@ -658,7 +660,7 @@ class TestGridSaveRestoreCursor:
         expected = [
             [
                 TextToken(value='Hello', offset=self.offset),
-                ControlToken(value=self.save),
+                self.save_token,
                 TextToken(value=' World', offset=self.offset),
                 SGRToken(value='0'),
                 EOFToken(value=''),
@@ -674,9 +676,9 @@ class TestGridSaveRestoreCursor:
         expected = [
             [
                 TextToken(value='Hello', offset=self.offset),
-                ControlToken(value=self.save),
+                self.save_token,
                 TextToken(value=' World', offset=self.offset),
-                ControlToken(value=self.restore),
+                self.restore_token,
                 TextToken(value='!', offset=self.offset),
                 SGRToken(value='0'),
                 EOFToken(value=''),
@@ -692,9 +694,9 @@ class TestGridSaveRestoreCursor:
         expected = [
             [
                 TextToken(value='Hello', offset=self.offset),
-                ControlToken(value=self.save),
+                self.save_token,
                 TextToken(value=' World', offset=self.offset),
-                ControlToken(value=self.restore),
+                self.restore_token,
                 TextToken(value='!', offset=self.offset),
                 SGRToken(value='0'),
                 EOFToken(value=''),
@@ -714,11 +716,11 @@ class TestGridSaveRestoreCursor:
         expected = [
             [
                 TextToken(value='AAAA', offset=0),
-                ControlToken(value='\x1b[s'),
+                self.save_token,
                 SGRToken(value='0'),
             ],
             [
-                ControlToken(value='\x1b[u'),
+                self.restore_token,
                 TextToken(value='▓▒░', offset=0),
                 SGRToken(value='0'),
                 EOFToken(value=''),
@@ -741,17 +743,17 @@ class TestGridSaveRestoreCursor:
         expected = [
             [
                 TextToken(value='AAAA', offset=0),
-                ControlToken(value='\x1b[s'),
+                self.save_token,
                 SGRToken(value='0'),
             ],
             [
-                ControlToken(value='\x1b[u'),
+                self.restore_token,
                 TextToken(value='▓▒░', offset=0),
-                ControlToken(value='\x1b[s'),
+                self.save_token,
                 SGRToken(value='0'),
             ],
             [
-                ControlToken(value='\x1b[u'),
+                self.restore_token,
                 TextToken(value='XXXXXXX', offset=0),
                 SGRToken(value='0'),
             ],
