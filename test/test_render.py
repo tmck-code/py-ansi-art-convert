@@ -9,6 +9,7 @@ from ansi_art_convert.convert import (
     Renderer,
     SGRToken,
     TextToken,
+    set_glyph_offset,
 )
 from test.helper import create_renderer, create_tokeniser
 
@@ -35,12 +36,12 @@ class TestSplitTextToken:
     'Test split_text_token method for line wrapping'
 
     def setup_method(self) -> None:
+        self.offset = 0
         self.renderer = Renderer(
             fpath='/test/file.ans',
             tokeniser=create_tokeniser(tokeniser_kwargs={'fpath': ''}),
         )
-        self.offset = 0
-        self.renderer.tokeniser.glyph_offset = self.offset
+        set_glyph_offset(self.offset)
 
     def test_split_text_token_exact_fit(self) -> None:
         self.renderer.width = 5
@@ -75,7 +76,6 @@ class TestSplitTextToken:
 
     def test_split_text_token_no_split(self) -> None:
         self.renderer.width = 80
-        self.renderer.tokeniser.glyph_offset = self.offset
 
         result = list(
             self.renderer.split_text_token(
@@ -93,9 +93,9 @@ class TestGenLines:
     'Test gen_lines method - core line generation logic'
 
     def setup_method(self) -> None:
-        self.renderer = create_renderer('')
         self.offset = 0
-        self.renderer.tokeniser.glyph_offset = self.offset
+        self.renderer = create_renderer('')
+        set_glyph_offset(self.offset)
 
     def test_gen_lines_simple_text(self) -> None:
         self.renderer.tokeniser.data = 'Hello'
@@ -293,9 +293,9 @@ class TestIterLines:
     'Test iter_lines method - converts token lines to strings'
 
     def setup_method(self) -> None:
-        self.renderer = create_renderer(data='')
         self.offset = 0
-        self.renderer.tokeniser.glyph_offset = self.offset
+        self.renderer = create_renderer(data='')
+        set_glyph_offset(self.offset)
 
     def test_iter_lines_simple(self) -> None:
         self.renderer.tokeniser.data = 'Hello'
@@ -346,7 +346,7 @@ class TestRender:
     def setup_method(self) -> None:
         self.renderer = create_renderer(data='')
         self.offset = 0
-        self.renderer.tokeniser.glyph_offset = self.offset
+        set_glyph_offset(self.offset)
 
     def test_render_simple_text(self) -> None:
         self.renderer.tokeniser.data = 'Hello World'
@@ -511,9 +511,9 @@ class TestRendererEdgeCases:
     'Test edge cases and special scenarios'
 
     def setup_method(self) -> None:
-        self.renderer = create_renderer(data='')
         self.offset = 0
-        self.renderer.tokeniser.glyph_offset = self.offset
+        self.renderer = create_renderer(data='')
+        set_glyph_offset(self.offset)
 
     def test_single_character(self) -> None:
         self.renderer.tokeniser.data = 'A'
@@ -591,9 +591,9 @@ class TestGridSaveRestoreCursor:
     'Test SaveCursorPosition (ESC[s) and RestoreCursorPosition (ESC[u) support'
 
     def setup_method(self) -> None:
-        self.renderer = create_renderer(data='')
         self.offset = 0
-        self.renderer.tokeniser.glyph_offset = self.offset
+        self.renderer = create_renderer(data='', tokeniser_kwargs={'glyph_offset': self.offset})
+        set_glyph_offset(self.offset)
 
         self.save, self.restore = '\x1b[s', '\x1b[u'
         self.save_token = ControlToken(value=self.save)
@@ -650,7 +650,6 @@ class TestGridSaveRestoreCursor:
             f'{self.restore}▓▒░',
         ])
         self.renderer.tokeniser.data = data
-        self.renderer.tokeniser.glyph_offset = 0
 
         result = self.renderer.grid()
         expected = [
@@ -674,7 +673,6 @@ class TestGridSaveRestoreCursor:
         ])
         self.renderer.tokeniser.data = data
         self.renderer.tokeniser.width = 20
-        self.renderer.tokeniser.glyph_offset = 0
 
         result = self.renderer.grid()
         expected = [

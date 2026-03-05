@@ -562,7 +562,7 @@ class Tokeniser:
     font_name: str
     encoding: SupportedEncoding = SupportedEncoding.CP437
     tokens: list[ANSIToken] = field(default_factory=list, init=False)
-    glyph_offset: int = field(init=False, default=0)
+    glyph_offset: int = field(default=0)
     ice_colours: bool = field(default=False)
     width: int = field(default=0)
     counts: Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
