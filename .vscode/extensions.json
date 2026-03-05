@@ -1,0 +1,20 @@
+{
+    "recommendations": [
+        // python -------------------------------
+        //
+        "ms-python.python",             // Python extension
+        "ms-python.debugpy",            // Debugger for Python
+        "ms-python.vscode-python-envs", // Python environment manager
+        "charliermarsh.ruff",           // Linter/formatter
+        "ms-python.mypy-type-checker",  // Type checker
+        "tamasfe.even-better-toml",     // TOML support for pyproject.toml
+        // general ------------------------------
+        //
+        "yo1dog.cursor-align",          // Align cursors with alt+a
+        "wmaurer.change-case",          // Change case of text
+        "GitHub.copilot-chat",          // GitHub Copilot Chat
+        "yzhang.markdown-all-in-one",   // Markdown syntax/rendering
+                                        // Mermaid syntax highlighting in markdown
+        "bpruitt-goddard.mermaid-markdown-syntax-highlighting",
+    ]
+}
