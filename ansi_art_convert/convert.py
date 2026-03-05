@@ -559,7 +559,7 @@ class Tokeniser:
     fpath: str
     sauce: SauceRecordExtended
     data: str
-    font_name: str
+    font_name: str = field(default='', repr=False)
     encoding: SupportedEncoding = SupportedEncoding.CP437
     tokens: list[ANSIToken] = field(default_factory=list, init=False)
     glyph_offset: int = field(default=0)
@@ -871,20 +871,7 @@ def parse_args() -> dict[str, Any]:
     return parser.parse_args().__dict__
 
 
-def main() -> None:
-    args = parse_args()
-    if args['launch_alacritty']:
-        AlacrittyClient().launch()
-    else:
-        args.pop('launch_alacritty')
-
-    if 'font_name' in args and args['font_name']:
-        args['font_name'] = FONT_ALIASES[args['font_name']]
-    global DEBUG
-    DEBUG = args.pop('verbose')
-    pp.enabled = not DEBUG
-
-    # Read file once
+def parse_info(args: dict[str, Any]) -> tuple[SupportedEncoding, SauceRecordExtended, str]:
     with open(args['fpath'], 'rb') as f:
         file_data = f.read()
 
@@ -892,11 +879,27 @@ def main() -> None:
         encoding = SupportedEncoding.from_value(args['encoding'])
     else:
         encoding = detect_encoding(file_data)
-        dprint(f'Detected encoding: {encoding}')
 
-    sauce_only = args.pop('sauce_only')
     sauce_record, data = SauceRecord.parse_record(file_data, encoding.value)
     sauce_extended, data = SauceRecordExtended.parse(sauce_record, data, args['fpath'], encoding)
+
+    return encoding, sauce_extended, data
+
+
+def run(args: dict[str, Any]) -> None:
+    if args.get('launch_alacritty'):
+        AlacrittyClient().launch()
+    else:
+        args.pop('launch_alacritty', None)
+
+    if 'font_name' in args and args['font_name']:
+        args['font_name'] = FONT_ALIASES[args['font_name']]
+    global DEBUG
+    DEBUG = args.pop('verbose', False)
+    pp.enabled = not DEBUG
+
+    sauce_only = args.pop('sauce_only', False)
+    encoding, sauce_extended, data = parse_info(args)
 
     if sauce_only:
         pp.enabled = True
@@ -916,6 +919,10 @@ def main() -> None:
 
     if DEBUG:
         dprint(pprint.pformat(t.counts.most_common()))
+
+
+def main() -> None:
+    run(parse_args())
 
 
 if __name__ == '__main__':
