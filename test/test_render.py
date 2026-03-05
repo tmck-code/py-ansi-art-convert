@@ -219,8 +219,7 @@ class TestGenLines:
         self.renderer.tokeniser.data = ''
 
         result = list(self.renderer.gen_lines())
-        expected: list = []
-        assert result == expected
+        assert result == []
 
     def test_gen_lines_control_sequences(self) -> None:
         self.renderer.tokeniser.data = 'Hello\x1b[5CWorld'

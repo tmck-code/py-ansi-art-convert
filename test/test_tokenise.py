@@ -210,7 +210,7 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.tokeniser.glyph_offset),
-            C0Token(value='\r', value_name='CR', offset=self.tokeniser.glyph_offset),
+            C0Token(value='\r', offset=self.tokeniser.glyph_offset),
             CP437Token(value='World', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected
@@ -218,8 +218,7 @@ class TestTokeniserTokenise:
     def test_tokenise_empty_string(self) -> None:
         self.tokeniser.data = ''
         result = list(self.tokeniser.tokenise())
-        expected: list = list()
-        assert result == expected
+        assert result == []
 
     def test_tokenise_only_ansi_codes(self) -> None:
         self.tokeniser.data = '\x1b[31m\x1b[44m\x1b[1m'
@@ -267,7 +266,7 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.tokeniser.glyph_offset),
-            C0Token(value='\t', value_name='HT', offset=self.tokeniser.glyph_offset),
+            C0Token(value='\t', offset=self.tokeniser.glyph_offset),
             CP437Token(value='World', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected

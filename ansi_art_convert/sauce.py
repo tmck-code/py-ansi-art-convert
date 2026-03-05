@@ -36,8 +36,8 @@ class SauceRecordExtended(NamedTuple):
     encoding: SupportedEncoding
     sauce: SauceRecord
     comments_data: list[str]
-    font: dict
-    tinfo: dict
+    font: dict[str, str]
+    tinfo: dict[str, dict[str, str | int]]
     aspect_ratio: str
     letter_spacing: str
     non_blink_mode: bool
@@ -61,7 +61,7 @@ class SauceRecordExtended(NamedTuple):
         return comments_data
 
     @staticmethod
-    def parse_flags(raw_n: int) -> dict:
+    def parse_flags(raw_n: int) -> dict[str, str | bool]:
         f = list(map(int, f'{raw_n:08b}'))
         dprint(f'Parsing flags from raw value {raw_n}: bits={f}')
         _bit1, _bit2, _bit3, ar1, ar2, ls1, ls2, b = f
@@ -73,11 +73,11 @@ class SauceRecordExtended(NamedTuple):
         }
 
     @staticmethod
-    def parse_font(font_name: str) -> dict:
+    def parse_font(font_name: str) -> dict[str, str]:
         return FONT_DATA.get(font_name, {})
 
     @staticmethod
-    def parse_tinfo_field(tinfo_key: str, sauce: SauceRecord) -> dict:
+    def parse_tinfo_field(tinfo_key: str, sauce: SauceRecord) -> dict[str, str | int]:
         if sauce.data_type == 5:
             # ('BinaryText', 'Variable'): {'tinfo1': '0', 'tinfo2': '0', 'tinfo3': '0', 'tinfo4': '0' }``
             raise NotImplementedError('SAUCE tinfo parsing for data_type 5 (BinaryText) is not implemented.')
@@ -87,8 +87,8 @@ class SauceRecordExtended(NamedTuple):
         }
 
     @staticmethod
-    def parse_tinfo(sauce: SauceRecord) -> dict:
-        info = {}
+    def parse_tinfo(sauce: SauceRecord) -> dict[str, dict[str, str | int]]:
+        info: dict[str, dict[str, str | int]] = {}
         for name in TINFO_NAMES:
             field_info = SauceRecordExtended.parse_tinfo_field(name, sauce)
             if field_info['name'] != '0':
@@ -104,7 +104,7 @@ class SauceRecordExtended(NamedTuple):
         tinfo = SauceRecordExtended.parse_tinfo(sauce)
         ice_colours = flags.get('non_blink_mode', False)
 
-        kwargs = {
+        kwargs: dict[str, Any] = {
             'fpath': fpath,
             'encoding': encoding,
             'sauce': sauce,
@@ -128,7 +128,7 @@ class SauceRecordExtended(NamedTuple):
             dprint(f'Error parsing comments: {ve}')
             return SauceRecordExtended(**kwargs), file_data
 
-    def asdict(self) -> dict:
+    def asdict(self) -> dict[str, Any]:
         return {
             'sauce': self.sauce._asdict(),
             'extended': {

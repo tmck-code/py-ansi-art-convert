@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 'Unit tests for all Token classes in convert.py'
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
+from typing import Any
 
 from ansi_art_convert.convert import (
-    ANSI_CONTROL_CODES,
-    C0_TOKEN_NAMES,
-    COLOUR_8_BG_VALUES,
-    COLOUR_8_FG_VALUES,
-    SGR_CODES,
     ANSIToken,
     C0Token,
     Color8BGToken,
@@ -39,18 +35,20 @@ class TestANSIToken:
             'value': 'test',
             'original_value': 'test',
             'value_name': '',
-            'value_map': {},
         }
 
         assert asdict(token) == expected
 
     def test_token_with_value_map(self) -> None:
-        token = ANSIToken(value='A', value_map={'A': 'Letter A'})
+        @dataclass
+        class MyToken(ANSIToken):
+            value_map = {'A': 'Letter A'}
+
+        token = MyToken(value='A')
         expected = {
             'value': 'A',
             'original_value': 'A',
             'value_name': 'Letter A',
-            'value_map': {'A': 'Letter A'},
         }
         assert asdict(token) == expected
 
@@ -71,7 +69,6 @@ class TestTextToken:
             'value': chr(ord('A') + offset),
             'original_value': 'A',
             'value_name': '',
-            'value_map': {},
         }
         assert asdict(token) == expected
 
@@ -82,7 +79,6 @@ class TestTextToken:
             'value': ''.join(chr(ord(c) + 0xE100) for c in 'ABC'),
             'original_value': 'ABC',
             'value_name': '',
-            'value_map': {},
         }
         assert asdict(token) == expected
 
@@ -94,7 +90,6 @@ class TestTextToken:
             'value': '♥',
             'original_value': '♥',
             'value_name': '',
-            'value_map': {},
         }
         assert asdict(token) == expected
 
@@ -105,7 +100,6 @@ class TestTextToken:
             'value': chr(ord('A') + 0xE100) + '♥' + chr(ord('B') + 0xE100),
             'original_value': 'A♥B',
             'value_name': '',
-            'value_map': {},
         }
         assert asdict(token) == expected
 
@@ -116,7 +110,6 @@ class TestTextToken:
             'value': 'ABC',
             'original_value': 'ABC',
             'value_name': '',
-            'value_map': {},
         }
         assert asdict(token) == expected
 
@@ -131,7 +124,6 @@ class TestC0Token:
                 'value': '',
                 'original_value': '\r',
                 'value_name': 'CR',
-                'value_map': C0_TOKEN_NAMES,
                 'offset': offset,
             }
             assert asdict(token) == expected
@@ -171,7 +163,6 @@ class TestCP437Token:
             'value': '☺',  # '☺' is CP437 code 1
             'original_value': '☺',
             'value_name': '',
-            'value_map': {},
             'offset': 0xE100,
         }
         assert asdict(token) == expected
@@ -193,7 +184,6 @@ class TestControlTokenCursorUp:
             'value': 'A',
             'original_value': '\x1b[A',
             'value_name': 'CursorUp',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'A',
         }
         assert asdict(token) == expected
@@ -206,7 +196,6 @@ class TestControlTokenCursorDown:
             'value': '5B',
             'original_value': '\x1b[5B',
             'value_name': 'CursorDown',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'B',
         }
         assert asdict(token) == expected
@@ -217,7 +206,6 @@ class TestControlTokenCursorDown:
             'value': 'C',
             'original_value': '\x1b[C',
             'value_name': 'CursorForward',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'C',
         }
         assert asdict(token) == expected
@@ -229,7 +217,6 @@ class TestControlTokenCursorDown:
             'value': '1C',
             'original_value': '\x1b[1C',
             'value_name': 'CursorForward',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'C',
         }
         assert asdict(token) == expected
@@ -241,7 +228,6 @@ class TestControlTokenCursorDown:
             'value': '10C',
             'original_value': '\x1b[10C',
             'value_name': 'CursorForward',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'C',
         }
         assert asdict(token) == expected
@@ -253,7 +239,6 @@ class TestControlTokenCursorDown:
             'value': '1000C',
             'original_value': '\x1b[1000C',
             'value_name': 'CursorForward',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'C',
         }
         assert asdict(token) == expected
@@ -267,7 +252,6 @@ class TestControlTokenCursorPosition:
             'value': '10;20H',
             'original_value': '\x1b[10;20H',
             'value_name': 'CursorPosition',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'H',
         }
         assert asdict(token) == expected
@@ -281,7 +265,6 @@ class TestControlTokenEraseInLine:
             'value': 'K',
             'original_value': '\x1b[K',
             'value_name': 'EraseInLine',
-            'value_map': ANSI_CONTROL_CODES,
             'subtype': 'K',
         }
         assert asdict(token) == expected
@@ -296,7 +279,6 @@ class TestTrueColorTokens:
             'value': '255,128,64',
             'original_value': '255,128,64',
             'value_name': '',
-            'value_map': {},
             'colour_type': ColourType.FG,
         }
         assert asdict(token) == expected
@@ -308,7 +290,6 @@ class TestTrueColorTokens:
             'value': '0,128,255',
             'original_value': '0,128,255',
             'value_name': '',
-            'value_map': {},
             'colour_type': ColourType.BG,
         }
         assert asdict(token) == expected
@@ -332,7 +313,6 @@ class TestColor256Tokens:
             'value': '42',
             'original_value': '42',
             'value_name': '',
-            'value_map': {},
             'colour_type': ColourType.FG,
         }
         assert asdict(token) == expected
@@ -344,7 +324,6 @@ class TestColor256Tokens:
             'value': '196',
             'original_value': '196',
             'value_name': '',
-            'value_map': {},
             'colour_type': ColourType.BG,
         }
         assert asdict(token) == expected
@@ -368,7 +347,6 @@ class TestColor8FGToken:
             'value': '31',
             'original_value': '31',
             'value_name': 'red',
-            'value_map': COLOUR_8_FG_VALUES,
             'colour_type': ColourType.FG,
             'bright': False,
         }
@@ -381,7 +359,6 @@ class TestColor8FGToken:
             'value': '34',
             'original_value': '34',
             'value_name': 'blue',
-            'value_map': COLOUR_8_FG_VALUES,
             'colour_type': ColourType.FG,
             'bright': False,
         }
@@ -394,7 +371,6 @@ class TestColor8FGToken:
             'value': '91',
             'original_value': '91',
             'value_name': 'bright_red',
-            'value_map': COLOUR_8_FG_VALUES,
             'colour_type': ColourType.FG,
             'bright': False,
         }
@@ -408,7 +384,6 @@ class TestColor8FGToken:
             'value': '91',  # 31 + 60 = 91
             'original_value': '31',
             'value_name': 'red',  # value_name is set before transformation
-            'value_map': COLOUR_8_FG_VALUES,
             'colour_type': ColourType.FG,
             'bright': True,
         }
@@ -431,7 +406,6 @@ class TestColor8BGToken:
             'value': '41',
             'original_value': '41',
             'value_name': 'red',
-            'value_map': COLOUR_8_BG_VALUES,
             'colour_type': ColourType.BG,
             'ice_colours': False,
         }
@@ -444,7 +418,6 @@ class TestColor8BGToken:
             'value': '44',
             'original_value': '44',
             'value_name': 'blue',
-            'value_map': COLOUR_8_BG_VALUES,
             'colour_type': ColourType.BG,
             'ice_colours': False,
         }
@@ -458,7 +431,6 @@ class TestColor8BGToken:
             'value': '101',  # 41 + 60 = 101
             'original_value': '41',
             'value_name': 'red',  # value_name is set before transformation
-            'value_map': COLOUR_8_BG_VALUES,
             'colour_type': ColourType.BG,
             'ice_colours': True,
         }
@@ -480,7 +452,6 @@ class TestColor8Token:
             'colour_type': ColourType.FG,
             'original_value': '31',
             'value': '31',
-            'value_map': COLOUR_8_FG_VALUES,
             'value_name': 'red',
         }
         expected = {
@@ -494,7 +465,6 @@ class TestColor8Token:
             'sgr_tokens': [],
             'tokens': [expected_fg],
             'value': '31',
-            'value_map': {},
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -506,7 +476,6 @@ class TestColor8Token:
             'ice_colours': False,
             'original_value': '44',
             'value': '44',
-            'value_map': COLOUR_8_BG_VALUES,
             'value_name': 'blue',
         }
         expected = {
@@ -520,7 +489,6 @@ class TestColor8Token:
             'sgr_tokens': [],
             'tokens': [expected_bg],
             'value': '44',
-            'value_map': {},
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -532,7 +500,6 @@ class TestColor8Token:
             'ice_colours': False,
             'original_value': '44',
             'value': '44',
-            'value_map': COLOUR_8_BG_VALUES,
             'value_name': 'blue',
         }
         expected_fg = {
@@ -540,7 +507,6 @@ class TestColor8Token:
             'colour_type': ColourType.FG,
             'original_value': '31',
             'value': '31',
-            'value_map': COLOUR_8_FG_VALUES,
             'value_name': 'red',
         }
 
@@ -555,7 +521,6 @@ class TestColor8Token:
             'sgr_tokens': [],
             'tokens': [expected_fg, expected_bg],
             'value': '31;44',
-            'value_map': {},
             'value_name': '',
         }
 
@@ -567,7 +532,6 @@ class TestColor8Token:
             'value': '91',
             'original_value': '31',
             'value_name': 'red',
-            'value_map': COLOUR_8_FG_VALUES,
             'colour_type': ColourType.FG,
             'bright': True,
         }
@@ -575,7 +539,6 @@ class TestColor8Token:
             'value': '1',
             'original_value': '1',
             'value_name': 'Bold',
-            'value_map': SGR_CODES,
         }
         expected = {
             'bg_token': None,
@@ -588,7 +551,6 @@ class TestColor8Token:
             'sgr_tokens': [expected_sgr],
             'tokens': [expected_sgr, expected_fg],
             'value': '1;31',
-            'value_map': {},
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -599,9 +561,8 @@ class TestColor8Token:
             'value': '0',
             'original_value': '0',
             'value_name': 'Reset',
-            'value_map': SGR_CODES,
         }
-        expected: dict = {
+        expected: dict[str, Any] = {
             'bg_token': None,
             'bright_bg': False,
             'bright_fg': False,
@@ -612,7 +573,6 @@ class TestColor8Token:
             'sgr_tokens': [expected_sgr],
             'tokens': [expected_sgr],
             'value': '0',
-            'value_map': {},
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -624,14 +584,12 @@ class TestColor8Token:
             'value': '1',
             'original_value': '1',
             'value_name': 'Bold',
-            'value_map': SGR_CODES,
         }
         expected_bg = {
             'colour_type': ColourType.BG,
             'ice_colours': True,
             'original_value': '44',
             'value': '104',  # 44 + 60 = 104 (ice colours bright)
-            'value_map': COLOUR_8_BG_VALUES,
             'value_name': 'blue',
         }
         expected = {
@@ -645,54 +603,68 @@ class TestColor8Token:
             'sgr_tokens': [expected_sgr],
             'tokens': [expected_sgr, expected_bg],
             'value': '1;5;44',
-            'value_map': {},
             'value_name': '',
         }
         assert asdict(token) == expected
 
     def test_color8_token_generate_tokens_basic(self) -> None:
         token = Color8Token(value='31;44', params=['31', '44'])
-        result = list(token.generate_tokens(None, None))
+        result = [(type(t), asdict(t)) for t in token.generate_tokens(None, None)]
         expected = [
-            Color8FGToken(
-                value='31',
-                value_name='red',
-                value_map=COLOUR_8_FG_VALUES,
-                colour_type=ColourType.FG,
-                bright=False,
+            (
+                Color8FGToken,
+                {
+                    'original_value': '31',
+                    'value': '31',
+                    'value_name': 'red',
+                    'colour_type': ColourType.FG,
+                    'bright': False,
+                },
             ),
-            Color8BGToken(
-                value='44',
-                value_name='blue',
-                value_map=COLOUR_8_BG_VALUES,
-                colour_type=ColourType.BG,
-                ice_colours=False,
+            (
+                Color8BGToken,
+                {
+                    'original_value': '44',
+                    'value': '44',
+                    'value_name': 'blue',
+                    'colour_type': ColourType.BG,
+                    'ice_colours': False,
+                },
             ),
         ]
         assert result == expected
 
     def test_color8_token_generate_tokens_with_reset(self) -> None:
         token = Color8Token(value='0;37;40', params=['0', '37', '40'])
-        result = list(token.generate_tokens(None, None))
+        result = [(type(t), asdict(t)) for t in token.generate_tokens(None, None)]
         expected = [
-            SGRToken(
-                value='0',
-                value_name='Reset',
-                value_map=SGR_CODES,
+            (
+                SGRToken,
+                {
+                    'original_value': '0',
+                    'value': '0',
+                    'value_name': 'Reset',
+                },
             ),
-            Color8FGToken(
-                value='37',
-                value_name='white',
-                value_map=COLOUR_8_FG_VALUES,
-                colour_type=ColourType.FG,
-                bright=False,
+            (
+                Color8FGToken,
+                {
+                    'original_value': '37',
+                    'value': '37',
+                    'value_name': 'white',
+                    'colour_type': ColourType.FG,
+                    'bright': False,
+                },
             ),
-            Color8BGToken(
-                value='40',
-                value_name='black',
-                value_map=COLOUR_8_BG_VALUES,
-                colour_type=ColourType.BG,
-                ice_colours=False,
+            (
+                Color8BGToken,
+                {
+                    'original_value': '40',
+                    'value': '40',
+                    'value_name': 'black',
+                    'colour_type': ColourType.BG,
+                    'ice_colours': False,
+                },
             ),
         ]
         assert result == expected
@@ -711,7 +683,6 @@ class TestSGRToken:
             'value': '0',
             'original_value': '0',
             'value_name': 'Reset',
-            'value_map': SGR_CODES,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[0m'
@@ -722,7 +693,6 @@ class TestSGRToken:
             'value': '1',
             'original_value': '1',
             'value_name': 'Bold',
-            'value_map': SGR_CODES,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[1m'
