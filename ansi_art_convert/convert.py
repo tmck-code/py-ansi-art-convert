@@ -804,16 +804,76 @@ class Renderer:
         'Generate a grid of tokens representing the final output, with line breaks and resets.'
         return list(self.gen_lines())
 
+    def arrange_grid(self, grid: list[list[ANSIToken]]) -> Iterator[list[ANSIToken]]:
+        '''
+        Process save/restore cursor operations in the grid.
+        This collapses lines that use save/restore cursor to the same line.
+        Uses x/y coordinates to track cursor position for save/restore operations.
+        '''
+        if not grid:
+            return
+
+        output_grid: dict[int, dict[int, ANSIToken]] = {}
+        x, y = 0, 0
+        saved_x, saved_y = 0, 0
+
+        line_idx = 0
+        while True:
+            if line_idx >= len(grid):
+                break
+            line, token_idx = grid[line_idx], 0
+
+            while True:
+                if token_idx >= len(line):
+                    break
+                token = line[token_idx]
+
+                if isinstance(token, ControlToken):
+                    if token.value_name == 'SaveCursorPosition':
+                        saved_x, saved_y = x, y
+                        token_idx += 1
+                        continue
+                    elif token.value_name == 'RestoreCursorPosition':
+                        x, y = saved_x, saved_y
+                        token_idx += 1
+                        continue
+
+                # Place token at current position
+                if y not in output_grid:
+                    output_grid[y] = {}
+                output_grid[y][x] = token
+                x += 1
+                token_idx += 1
+
+            # After processing line, reset x and move to next y
+            line_idx += 1
+            x = 0
+            y += 1
+
+        # Convert dict grid to list of lists
+        for row_idx in sorted(output_grid.keys()):
+            row = output_grid[row_idx]
+            line_tokens = [row[col_idx] for col_idx in sorted(row.keys())]
+            if line_tokens:
+                yield line_tokens
+
+    def render(self) -> str:
+        '''
+        Render an arranged grid of tokens to a string.
+        Each line gets a reset sequence at the end.
+        '''
+        grid: list[list[ANSIToken]] = list(self.arrange_grid(self.grid()))
+        lines = []
+        for line in grid:
+            lines.append(''.join(map(str, line)) + '\x1b[0m\n')
+        return ''.join(lines)
+
     def iter_lines(self) -> Iterator[str]:
         for i, line in enumerate(self.gen_lines()):
             if DEBUG:
                 print(f'\n\x1b[30;103m[{i + 1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
             yield ''.join(map(str, line)) + '\x1b[0m\n'
         yield str(EOFToken(value=''))
-
-    def render(self) -> str:
-        'Render tokens into a string with proper line wrapping.'
-        return ''.join(list(self.iter_lines()))
 
 
 def parse_args() -> dict[str, Any]:

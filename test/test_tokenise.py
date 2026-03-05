@@ -15,6 +15,7 @@ from ansi_art_convert.convert import (
     TrueColorFGToken,
     UnknownToken,
     get_glyph_offset,
+    set_glyph_offset,
 )
 from ansi_art_convert.encoding import SupportedEncoding
 from test.helper import create_mock_sauce
@@ -305,7 +306,7 @@ class TestSaveRestoreCursor:
             font_name='IBM VGA',
         )
         self.offset = 0
-        self.tokeniser.glyph_offset = self.offset
+        set_glyph_offset(self.offset)
 
         self.save, self.restore = '\x1b[s', '\x1b[u'
         self.save_token, self.restore_token = ControlToken(value=self.save), ControlToken(value=self.restore)
