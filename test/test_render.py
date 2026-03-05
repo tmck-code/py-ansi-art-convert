@@ -734,7 +734,7 @@ class TestRenderGrid:
         self.save_token = ControlToken(value=self.save)
         self.restore_token = ControlToken(value=self.restore)
 
-    def test_render_grid_save_restore(self) -> None:
+    def test_render_save_restore(self) -> None:
         data = ''.join([
             f'AAAA{self.save}\r',
             f'{self.restore}▓▒░{self.save}\r',
@@ -745,4 +745,20 @@ class TestRenderGrid:
 
         result = self.renderer.render()
         expected = 'AAAA▓▒░XXXXXXX\x1b[0m\n'
+        assert result == expected
+
+    def test_render_save_restore_wrap(self) -> None:
+        data = ''.join([
+            f'AAAAA{self.save}\r',  # 5 chars
+            f'{self.restore}▓▒░▒▓{self.save}\r',  # also 5 chars
+        ])
+        self.renderer.tokeniser.data = data
+        self.renderer.tokeniser.width = 6  # width should be 6 chars max
+        self.renderer.width = 6
+
+        result = self.renderer.render()
+        expected = (
+            '''AAAAA▓\x1b[0m\n'''
+            '''▒░▒▓\x1b[0m\n'''
+        )
         assert result == expected
