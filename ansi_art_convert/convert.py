@@ -56,12 +56,22 @@ def get_glyph_offset(font_name: str) -> int:
         raise ValueError(f'Unknown font_name: {font_name!r}')
 
 
+def set_glyph_offset(offset: int) -> None:
+    # update the offset class variable for both TextToken and CP437Token
+    TextToken.set_offset(offset)
+    CP437Token.set_offset(offset)
+
+
 @dataclass
 class TextToken(ANSIToken):
-    offset: int = 0xE100
+    offset: int = field(repr=False, default=-1)
+    _offset: ClassVar[int] = 0xE100
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        # if offset wasn't supplied in constructor, use the class variable
+        if self.offset == -1:
+            self.offset = self._offset
         self.value = TextToken._translate_chars(self.value, self.offset)
 
     @staticmethod
@@ -81,6 +91,12 @@ class TextToken(ANSIToken):
             '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
             '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
         ])
+
+    @classmethod
+    def set_offset(cls, offset: int) -> None:
+        'update the offset class variable for the TextToken class'
+
+        TextToken._offset = offset
 
 
 C0_TOKEN_NAMES = {
@@ -141,7 +157,8 @@ class C0Token(TextToken):
 
 @dataclass
 class CP437Token(ANSIToken):
-    offset: int = 0xE100
+    _offset: ClassVar[int] = 0xE100
+    offset: int = field(repr=False, default=-1)
 
     def _translate_char(self, ch: str) -> str:
         n = UNICODE_TO_CP437.get(ord(ch), ord(ch))
@@ -152,6 +169,9 @@ class CP437Token(ANSIToken):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        # if offset wasn't supplied in constructor, use the class variable
+        if self.offset == -1:
+            self.offset = self._offset
         self.value = ''.join([self._translate_char(v) for v in self.original_value])
 
     def repr(self) -> str:
@@ -161,6 +181,12 @@ class CP437Token(ANSIToken):
             '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
             '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
         ])
+
+    @classmethod
+    def set_offset(cls, offset: int) -> None:
+        'update the offset class variable for the CP437Token class'
+
+        CP437Token._offset = offset
 
 
 ANSI_CONTROL_CODES = {
@@ -552,6 +578,8 @@ class Tokeniser:
             if self.encoding == SupportedEncoding.CP437:
                 self.glyph_offset = get_glyph_offset('IBM VGA')
 
+        set_glyph_offset(self.glyph_offset)
+
         if not self.width:
             self.width = int(self.sauce.sauce.tinfo1) or 80
 
@@ -565,6 +593,11 @@ class Tokeniser:
 
         dprint(f'Using extended sauce: {self.sauce!r}')
         dprint(f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}')
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == 'glyph_offset':
+            set_glyph_offset(value)
+        super().__setattr__(name, value)
 
     def create_tokens(self, code_chars: list[str]) -> list[ANSIToken]:
         'Create a token from a complete ANSI escape sequence.'
@@ -593,7 +626,19 @@ class Tokeniser:
         return [UnknownToken(value=''.join(code_chars))]
 
     def tokenise(self) -> Iterator[ANSIToken]:
-        'Tokenise ANSI escape sequences and text.'
+        '''
+        Tokenise ANSI escape sequences and text.
+        This produces a faithful representation of the tokens in the original data
+        - all newlines are present
+        - colour tokens are split up into their components (e.g. Color8Token -> SGRToken + Color8FGToken/Color8BGToken)
+        - tokens are not merged across newlines, so the original token boundaries are preserved
+        - control characters are preserved as separate tokens
+        - consecutive text chars (non-newline) are merged into a single TextToken
+            - any ANSI code or C0 char will cause the current TextToken to be yielded
+            - then the ANSI code or C0 char will be yielded as its own token
+            - then, the next TextToken will start accumulating chars
+        '''
+
         isCode, currCode = False, []
         currText: list[str] = []
         for ch in self.data:
@@ -601,7 +646,7 @@ class Tokeniser:
                 isCode = True
                 currCode.append(ch)
                 if currText:
-                    yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
+                    yield self._textTokenType(value=''.join(currText))
                     currText = []
 
             elif isCode:
@@ -615,18 +660,18 @@ class Tokeniser:
                     self.counts[(ch, hex(ord(ch)))] += 1
                 if ch == '\n':
                     if currText:
-                        yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
+                        yield self._textTokenType(value=''.join(currText))
                         currText = []
                     yield NewLineToken(value=ch)
                 elif ch in C0_TOKEN_NAMES:
                     if currText:
-                        yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
+                        yield self._textTokenType(value=''.join(currText))
                         currText = []
-                    yield C0Token(value=ch, offset=self.glyph_offset)
+                    yield C0Token(value=ch)
                 else:
                     currText.append(ch)
         if currText:
-            yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
+            yield self._textTokenType(value=''.join(currText))
 
 
 @dataclass
@@ -646,7 +691,7 @@ class Renderer:
     def split_text_token(self, t: TextToken | CP437Token, remainder: int) -> Iterator[ANSIToken]:
         s = str(t)
         for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
-            yield t.__class__(value=chunk, offset=t.offset)
+            yield t.__class__(value=chunk)
 
     def _add_current_colors(self) -> None:
         'Re-add current FG/BG colors to the current line.'
@@ -666,9 +711,6 @@ class Renderer:
             if skips > 0:
                 skips -= 1
                 continue
-            dprint(
-                f'Processing token: {t}\x1b[0m, current line length: {self._currLength}, width: {self.width} token type: {type(t).__name__}, token len: {len(str(t))}'
-            )
 
             if isinstance(t, Color8Token):
                 tokens = list(t.generate_tokens(self._currFG, self._currBG))
