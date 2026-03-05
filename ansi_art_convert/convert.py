@@ -9,7 +9,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import batched, chain, pairwise
-from typing import Iterator, List
+from typing import Any, ClassVar, Iterator, List, Protocol
 
 from laser_prynter import pp
 
@@ -20,12 +20,17 @@ from ansi_art_convert.sauce import SauceRecord, SauceRecordExtended
 from ansi_art_convert.terminals.alacritty import AlacrittyClient
 
 
+class Token(Protocol):
+    def repr(self) -> str: ...
+    def __str__(self) -> str: ...
+
+
 @dataclass
-class ANSIToken:
+class ANSIToken(Token):
     value: str
-    value_name: str = field(default='')
-    value_map: dict = field(repr=False, default_factory=dict)
+    value_name: str = field(init=False)
     original_value: str = field(init=False)
+    value_map: ClassVar[dict[str, str]] = field(repr=False, default={})
 
     def __post_init__(self) -> None:
         self.original_value = self.value
@@ -79,48 +84,48 @@ class TextToken(ANSIToken):
 
 
 C0_TOKEN_NAMES = {
-    0x00: 'NUL',
-    0x01: 'SOH',
-    0x02: 'STX',
-    0x03: 'ETX',
-    0x04: 'EOT',
-    0x05: 'ENQ',
-    0x06: 'ACK',
-    0x07: 'BEL',
-    0x08: 'BS',
-    0x09: 'HT',
-    0x0A: 'LF',
-    0x0B: 'VT',
-    0x0C: 'FF',
-    0x0D: 'CR',
-    0x0E: 'SO',
-    0x0F: 'SI',
-    0x10: 'DLE',
-    0x11: 'DC1',
-    0x12: 'DC2',
-    0x13: 'DC3',
-    0x14: 'DC4',
-    0x15: 'NAK',
-    0x16: 'SYN',
-    0x17: 'ETB',
-    0x18: 'CAN',
-    0x19: 'EM',
-    0x1A: 'SUB',
-    0x1B: 'ESC',
-    0x1C: 'FS',
-    0x1D: 'GS',
-    0x1E: 'RS',
-    0x1F: 'US',
+    chr(0x00): 'NUL',
+    chr(0x01): 'SOH',
+    chr(0x02): 'STX',
+    chr(0x03): 'ETX',
+    chr(0x04): 'EOT',
+    chr(0x05): 'ENQ',
+    chr(0x06): 'ACK',
+    chr(0x07): 'BEL',
+    chr(0x08): 'BS',
+    chr(0x09): 'HT',
+    chr(0x0A): 'LF',
+    chr(0x0B): 'VT',
+    chr(0x0C): 'FF',
+    chr(0x0D): 'CR',
+    chr(0x0E): 'SO',
+    chr(0x0F): 'SI',
+    chr(0x10): 'DLE',
+    chr(0x11): 'DC1',
+    chr(0x12): 'DC2',
+    chr(0x13): 'DC3',
+    chr(0x14): 'DC4',
+    chr(0x15): 'NAK',
+    chr(0x16): 'SYN',
+    chr(0x17): 'ETB',
+    chr(0x18): 'CAN',
+    chr(0x19): 'EM',
+    chr(0x1A): 'SUB',
+    chr(0x1B): 'ESC',
+    chr(0x1C): 'FS',
+    chr(0x1D): 'GS',
+    chr(0x1E): 'RS',
+    chr(0x1F): 'US',
 }
 
 
 @dataclass
 class C0Token(TextToken):
-    value_map: dict = field(repr=False, default_factory=lambda: C0_TOKEN_NAMES)
+    value_map = C0_TOKEN_NAMES
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.value_name = self.value_map.get(ord(self.original_value), '')
+        self.value_name = self.value_map.get(self.original_value, '')
         if self.value_name == 'CR':
             self.value = ''
 
@@ -132,41 +137,6 @@ class C0Token(TextToken):
             + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
             + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
         ])
-
-
-CP_437_MAP = {
-    0x01: '☺',
-    0x02: '☻',
-    0x03: '♥',
-    0x04: '♦',
-    0x05: '♣',
-    0x06: '♠',
-    0x07: '•',
-    0x08: '◘',
-    0x09: '○',
-    0x0A: '◙',
-    0x0B: '♂',
-    0x0C: '♀',
-    0x0D: '♪',
-    0x0E: '♫',
-    0x0F: '☼',
-    0x10: '►',
-    0x11: '◄',
-    0x12: '↕',
-    0x13: '‼',
-    0x14: '¶',
-    0x15: '§',
-    0x16: '▬',
-    0x17: '↨',
-    0x18: '↑',
-    0x19: '↓',
-    0x1A: '→',
-    0x1B: '←',
-    0x1C: '∟',
-    0x1D: '↔',
-    0x1E: '▲',
-    0x1F: '▼',
-}
 
 
 @dataclass
@@ -214,13 +184,13 @@ ANSI_CONTROL_CODES = {
 
 @dataclass
 class ControlToken(ANSIToken):
-    value_map: dict = field(repr=False, default_factory=lambda: ANSI_CONTROL_CODES)
     subtype: str = field(init=False)
+    value_map = ANSI_CONTROL_CODES
 
     def __post_init__(self) -> None:
         self.original_value = self.value
         self.subtype = self.value[-1]
-        self.value_name = ANSI_CONTROL_CODES.get(self.subtype, '')
+        self.value_name = self.value_map.get(self.subtype, '')
         self.value = self.value[2:]
 
     def repr(self) -> str:
@@ -249,13 +219,11 @@ class ColourType(Enum):
 
 
 @dataclass
-class ColorFGToken(ANSIToken):
-    pass
+class ColorFGToken(ANSIToken): ...
 
 
 @dataclass
-class ColorBGToken(ANSIToken):
-    pass
+class ColorBGToken(ANSIToken): ...
 
 
 @dataclass
@@ -445,7 +413,7 @@ class Color8Token(ANSIToken):
 
 @dataclass
 class Color8FGToken(ColorFGToken):
-    value_map: dict = field(repr=False, default_factory=lambda: COLOUR_8_FG_VALUES)
+    value_map = COLOUR_8_FG_VALUES
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
     bright: bool = False
 
@@ -470,7 +438,7 @@ class Color8FGToken(ColorFGToken):
 
 @dataclass
 class Color8BGToken(ColorBGToken):
-    value_map: dict = field(repr=False, default_factory=lambda: COLOUR_8_BG_VALUES)
+    value_map = COLOUR_8_BG_VALUES
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
     ice_colours: bool = field(default=False)
 
@@ -509,7 +477,7 @@ SGR_CODES = {
 
 @dataclass
 class SGRToken(ANSIToken):
-    value_map: dict = field(repr=False, default_factory=lambda: SGR_CODES)
+    value_map = SGR_CODES
 
     def __str__(self) -> str:
         return f'\x1b[{self.value}m'
@@ -650,7 +618,7 @@ class Tokeniser:
                         yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
                         currText = []
                     yield NewLineToken(value=ch)
-                elif ord(ch) in C0_TOKEN_NAMES:
+                elif ch in C0_TOKEN_NAMES:
                     if currText:
                         yield self._textTokenType(value=''.join(currText), offset=self.glyph_offset)
                         currText = []
@@ -809,7 +777,7 @@ class Renderer:
         return ''.join(list(self.iter_lines()))
 
 
-def parse_args() -> dict:
+def parse_args() -> dict[str, Any]:
     parser = ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
 
