@@ -777,7 +777,7 @@ class Renderer:
         return ''.join(list(self.iter_lines()))
 
 
-def parse_args() -> dict:
+def parse_args() -> dict[str, Any]:
     parser = ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
 

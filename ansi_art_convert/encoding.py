@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from enum import Enum
+from typing import Any
 
 from laser_prynter import pp
 
@@ -80,7 +81,7 @@ ISO_8859_1_BOX_MAP = (
 POPULAR_CHAR_MAP = {
     'Ñ': {SupportedEncoding.CP437: 0xA5, SupportedEncoding.ISO_8859_1: 0xD1},
 }
-ODD_ONES_OUT: list[dict] = [
+ODD_ONES_OUT: list[dict[str, Any]] = [
     {
         'points': 1,
         'points_for': SupportedEncoding.ISO_8859_1,

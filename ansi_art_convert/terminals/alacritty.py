@@ -1,31 +1,37 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import os
 import subprocess
-import tomlkit
+from dataclasses import dataclass
 from importlib.resources import files
+from typing import Any
+
+import tomlkit
+
 
 def get_config_path() -> str:
     'Path to the alacritty.toml config file in the package resources.'
     return str(files('ansi_art_convert.terminals.configs').joinpath('alacritty.toml'))
 
+
 CONFIG_FPATH = get_config_path()
 
 FONT_OFFSETS = {
-    'Amiga Topaz 1':      {},
-    'Amiga Topaz 1+':     {},
-    'Amiga Topaz 2':      {},
-    'Amiga Topaz 2+':     {},
-    'Amiga MicroKnight':  {},
+    'Amiga Topaz 1': {},
+    'Amiga Topaz 1+': {},
+    'Amiga Topaz 2': {},
+    'Amiga Topaz 2+': {},
+    'Amiga MicroKnight': {},
     'Amiga MicroKnight+': {},
-    'Amiga mOsOul':       {},
-    'Amiga P0T-NOoDLE':   {},
-    'IBM VGA':            {'x': -2},
+    'Amiga mOsOul': {},
+    'Amiga P0T-NOoDLE': {},
+    'IBM VGA': {'x': -2},
 }
+
 
 @dataclass
 class AlacrittyClient:
-    config: dict
+    config: dict[str, Any]
 
     def __init__(self, config_fpath: str = CONFIG_FPATH) -> None:
         with open(config_fpath, 'r') as f:
