@@ -255,13 +255,11 @@ class TestSauceRecordExtendedParseComments:
     def test_parse_multiple_comments(self) -> None:
         'Test parsing multiple comments'
 
-        comment_block = SauceRecordExtended.write_comments(
-            [
-                'Comment line 1',
-                'Comment line 2',
-                'Comment line 3',
-            ]
-        )
+        comment_block = SauceRecordExtended.write_comments([
+            'Comment line 1',
+            'Comment line 2',
+            'Comment line 3',
+        ])
         result = SauceRecordExtended.parse_comments(comment_block, 3)
 
         expected = [
@@ -325,22 +323,22 @@ class TestSauceRecordExtendedParseFlags:
 
         # Test (0, 1) - legacy device
         result = SauceRecordExtended.parse_flags(0b00001000)  # Bit 3 set
-        assert 'legacy device' in result['aspect_ratio'].lower()
+        assert 'legacy device' in str(result['aspect_ratio']).lower()
 
         # Test (1, 0) - modern device
         result = SauceRecordExtended.parse_flags(0b00010000)  # Bit 4 set
-        assert 'modern device' in result['aspect_ratio'].lower()
+        assert 'modern device' in str(result['aspect_ratio']).lower()
 
     def test_parse_letter_spacing_flags(self) -> None:
         'Test parsing letter spacing bits'
 
         # Test (0, 1) - 8 pixel font (ls1=0, ls2=1, so bit 1 set)
         result = SauceRecordExtended.parse_flags(0b00000010)  # Bit 1 set
-        assert '8 pixel' in result['letter_spacing']
+        assert '8 pixel' in str(result['letter_spacing'])
 
         # Test (1, 0) - 9 pixel font (ls1=1, ls2=0, so bit 2 set)
         result = SauceRecordExtended.parse_flags(0b00000100)  # Bit 2 set
-        assert '9 pixel' in result['letter_spacing']
+        assert '9 pixel' in str(result['letter_spacing'])
 
     def test_parse_ice_colours_flag(self) -> None:
         'Test ICE colors flag (same as non_blink_mode)'
@@ -868,11 +866,9 @@ class TestSauceIntegration:
             flags=1,  # ICE colors enabled
             tinfo_s='IBM VGA',
         )
-        comment_block = SauceRecordExtended.write_comments(
-            [
-                'comment 1',
-            ]
-        )
+        comment_block = SauceRecordExtended.write_comments([
+            'comment 1',
+        ])
 
         sauce, data = SauceRecord.parse_record(
             file_content + comment_block.encode('cp437') + sauce_binary.record_bytes('cp437'),
