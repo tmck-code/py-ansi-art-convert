@@ -53,7 +53,7 @@ strict = true                 # enable all strict type-checking options
 
 [tool.ruff]
 exclude = ["ops/", ".venv/"]
-line-length = 120
+line-length = 140
 
 [tool.ruff.lint]
 fixable = ["ALL"]
