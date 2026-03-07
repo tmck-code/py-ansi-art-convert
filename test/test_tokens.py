@@ -2,16 +2,15 @@
 'Unit tests for all Token classes in convert.py'
 
 from dataclasses import asdict, dataclass
-from typing import Any
 
 from ansi_art_convert.convert import (
     ANSIToken,
     C0Token,
     Color8BGToken,
     Color8FGToken,
-    Color8Token,
     Color256BGToken,
     Color256FGToken,
+    ColorToken,
     ColourType,
     ControlToken,
     CP437Token,
@@ -442,235 +441,170 @@ class TestColor8BGToken:
         assert token.value == '161'  # 101 + 60 = 161
 
 
-class TestColor8Token:
+class TestColorToken:
     'Test composite 8-color token that generates sub-tokens'
 
-    def test_color8_token_fg_only(self) -> None:
-        token = Color8Token(value='31', params=['31'])
-        expected_fg = {
-            'bright': False,
-            'colour_type': ColourType.FG,
-            'original_value': '31',
-            'value': '31',
-            'value_name': 'red',
-        }
+    def test_fg(self) -> None:
+        token = ColorToken(value='31')
         expected = {
-            'bg_token': None,
-            'bright_bg': False,
-            'bright_fg': False,
-            'fg_token': expected_fg,
-            'ice_colours': False,
-            'original_value': '31',
-            'params': ['31'],
-            'sgr_tokens': [],
-            'tokens': [expected_fg],
             'value': '31',
             'value_name': '',
-        }
-        assert asdict(token) == expected
-
-    def test_color8_token_bg_only(self) -> None:
-        token = Color8Token(value='44', params=['44'])
-        expected_bg = {
-            'colour_type': ColourType.BG,
-            'ice_colours': False,
-            'original_value': '44',
-            'value': '44',
-            'value_name': 'blue',
-        }
-        expected = {
-            'bg_token': expected_bg,
-            'bright_bg': False,
-            'bright_fg': False,
+            'original_value': '31',
+            'ice_colour_mode': False,
+            'sgr_token': None,
             'fg_token': None,
-            'ice_colours': False,
-            'original_value': '44',
-            'params': ['44'],
-            'sgr_tokens': [],
-            'tokens': [expected_bg],
+            'bg_token': None,
+            'split_components': False,
+        }
+
+        assert asdict(token) == expected
+
+    def test_bg(self) -> None:
+        token = ColorToken(value='44')
+        expected = {
             'value': '44',
             'value_name': '',
+            'original_value': '44',
+            'ice_colour_mode': False,
+            'sgr_token': None,
+            'fg_token': None,
+            'bg_token': None,
+            'split_components': False,
         }
         assert asdict(token) == expected
 
-    def test_color8_token_fg_and_bg(self) -> None:
-        token = Color8Token(value='31;44', params=['31', '44'])
-        expected_bg = {
-            'colour_type': ColourType.BG,
-            'ice_colours': False,
-            'original_value': '44',
-            'value': '44',
-            'value_name': 'blue',
-        }
-        expected_fg = {
-            'bright': False,
-            'colour_type': ColourType.FG,
-            'original_value': '31',
-            'value': '31',
-            'value_name': 'red',
-        }
-
+    def test_fg_and_bg(self) -> None:
+        token = ColorToken(value='31;44', split_components=True)
         expected = {
-            'bg_token': expected_bg,
-            'bright_bg': False,
-            'bright_fg': False,
-            'fg_token': expected_fg,
-            'ice_colours': False,
-            'original_value': '31;44',
-            'params': ['31', '44'],
-            'sgr_tokens': [],
-            'tokens': [expected_fg, expected_bg],
             'value': '31;44',
             'value_name': '',
+            'original_value': '31;44',
+            'ice_colour_mode': False,
+            'sgr_token': None,
+            'fg_token': {
+                'value': '31',
+                'value_name': 'red',
+                'original_value': '31',
+                'colour_type': ColourType.FG,
+                'bright': False,
+            },
+            'bg_token': {
+                'value': '44',
+                'value_name': 'blue',
+                'original_value': '44',
+                'colour_type': ColourType.BG,
+                'ice_colours': False,
+            },
+            'split_components': True,
         }
 
         assert asdict(token) == expected
 
-    def test_color8_token_with_sgr(self) -> None:
-        token = Color8Token(value='1;31', params=['1', '31'])
-        expected_fg = {
-            'value': '91',
-            'original_value': '31',
-            'value_name': 'red',
-            'colour_type': ColourType.FG,
-            'bright': True,
-        }
-        expected_sgr = {
-            'value': '1',
-            'original_value': '1',
-            'value_name': 'Bold',
-        }
+    def test_fg_and_sgr(self) -> None:
+        token = ColorToken(value='1;31', split_components=True)
         expected = {
-            'bg_token': None,
-            'bright_bg': False,
-            'bright_fg': True,
-            'fg_token': expected_fg,
-            'ice_colours': False,
-            'original_value': '1;31',
-            'params': ['1', '31'],
-            'sgr_tokens': [expected_sgr],
-            'tokens': [expected_sgr, expected_fg],
             'value': '1;31',
             'value_name': '',
-        }
-        assert asdict(token) == expected
-
-    def test_color8_token_with_reset(self) -> None:
-        token = Color8Token(value='0', params=['0'])
-        expected_sgr = {
-            'value': '0',
-            'original_value': '0',
-            'value_name': 'Reset',
-        }
-        expected: dict[str, Any] = {
+            'original_value': '1;31',
+            'ice_colour_mode': False,
+            'sgr_token': {
+                'value': '1',
+                'value_name': 'Bold',
+                'original_value': '1',
+            },
+            'fg_token': {
+                'value': '91',  # Bold (SGR 1) makes foreground bright: 31 + 60 = 91
+                'value_name': 'red',
+                'original_value': '31',
+                'colour_type': ColourType.FG,
+                'bright': True,
+            },
             'bg_token': None,
-            'bright_bg': False,
-            'bright_fg': False,
-            'fg_token': None,
-            'ice_colours': False,
-            'original_value': '0',
-            'params': ['0'],
-            'sgr_tokens': [expected_sgr],
-            'tokens': [expected_sgr],
+            'split_components': True,
+        }
+        assert asdict(token) == expected
+
+    def test_sgr_reset(self) -> None:
+        token = ColorToken(value='0')
+        expected = {
             'value': '0',
             'value_name': '',
-        }
-        assert asdict(token) == expected
-
-    def test_color8_token_ice_colours(self) -> None:
-        token = Color8Token(value='1;5;44', params=['1', '5', '44'], ice_colours=True)
-        # With ice_colours, param '5' enables bright background
-        expected_sgr = {
-            'value': '1',
-            'original_value': '1',
-            'value_name': 'Bold',
-        }
-        expected_bg = {
-            'colour_type': ColourType.BG,
-            'ice_colours': True,
-            'original_value': '44',
-            'value': '104',  # 44 + 60 = 104 (ice colours bright)
-            'value_name': 'blue',
-        }
-        expected = {
-            'bg_token': expected_bg,
-            'bright_bg': True,
-            'bright_fg': True,
+            'original_value': '0',
+            'ice_colour_mode': False,
+            'sgr_token': None,
             'fg_token': None,
-            'ice_colours': True,
-            'original_value': '1;5;44',
-            'params': ['1', '5', '44'],
-            'sgr_tokens': [expected_sgr],
-            'tokens': [expected_sgr, expected_bg],
-            'value': '1;5;44',
-            'value_name': '',
+            'bg_token': None,
+            'split_components': False,
         }
         assert asdict(token) == expected
 
-    def test_color8_token_generate_tokens_basic(self) -> None:
-        token = Color8Token(value='31;44', params=['31', '44'])
-        result = [(type(t), asdict(t)) for t in token.generate_tokens(None, None)]
-        expected = [
-            (
-                Color8FGToken,
-                {
-                    'original_value': '31',
-                    'value': '31',
-                    'value_name': 'red',
-                    'colour_type': ColourType.FG,
-                    'bright': False,
-                },
-            ),
-            (
-                Color8BGToken,
-                {
-                    'original_value': '44',
-                    'value': '44',
-                    'value_name': 'blue',
-                    'colour_type': ColourType.BG,
-                    'ice_colours': False,
-                },
-            ),
-        ]
-        assert result == expected
+    def test_ice_colours(self) -> None:
+        # Test with '5;44' where '5' is the SGR code that triggers ice colors
+        token = ColorToken(value='5;44', split_components=True, ice_colour_mode=True)
+        # With ice_colour_mode=True, param '5' (BlinkSlow) enables bright background
+        expected = {
+            'value': '5;44',
+            'value_name': '',
+            'original_value': '5;44',
+            'ice_colour_mode': True,
+            'sgr_token': {
+                'value': '5',
+                'value_name': 'BlinkSlow',
+                'original_value': '5',
+            },
+            'fg_token': None,
+            'bg_token': {
+                'colour_type': ColourType.BG,
+                'ice_colours': True,
+                'original_value': '44',
+                'value': '104',  # 44 + 60 = 104 (ice colours bright)
+                'value_name': 'blue',
+            },
+            'split_components': True,
+        }
+        assert asdict(token) == expected
+
+    def test_fg_and_bg_2(self) -> None:
+        token = ColorToken(value='31;44', split_components=True)
+        # Test individual token attributes
+        assert token.fg_token is not None
+        assert token.bg_token is not None
+        assert token.sgr_token is None
+
+        assert type(token.fg_token) is Color8FGToken
+        assert asdict(token.fg_token) == {
+            'value': '31',
+            'value_name': 'red',
+            'original_value': '31',
+            'colour_type': ColourType.FG,
+            'bright': False,
+        }
+
+        assert type(token.bg_token) is Color8BGToken
+        assert asdict(token.bg_token) == {
+            'value': '44',
+            'value_name': 'blue',
+            'original_value': '44',
+            'colour_type': ColourType.BG,
+            'ice_colours': False,
+        }
 
     def test_color8_token_generate_tokens_with_reset(self) -> None:
-        token = Color8Token(value='0;37;40', params=['0', '37', '40'])
-        result = [(type(t), asdict(t)) for t in token.generate_tokens(None, None)]
-        expected = [
-            (
-                SGRToken,
-                {
-                    'original_value': '0',
-                    'value': '0',
-                    'value_name': 'Reset',
-                },
-            ),
-            (
-                Color8FGToken,
-                {
-                    'original_value': '37',
-                    'value': '37',
-                    'value_name': 'white',
-                    'colour_type': ColourType.FG,
-                    'bright': False,
-                },
-            ),
-            (
-                Color8BGToken,
-                {
-                    'original_value': '40',
-                    'value': '40',
-                    'value_name': 'black',
-                    'colour_type': ColourType.BG,
-                    'ice_colours': False,
-                },
-            ),
-        ]
-        assert result == expected
+        token = ColorToken(value='0;37;40', split_components=True)
+        expected = {
+            'value': '0;37;40',
+            'value_name': '',
+            'original_value': '0;37;40',
+            'ice_colour_mode': False,
+            'sgr_token': {'value': '0', 'value_name': 'Reset', 'original_value': '0'},
+            'fg_token': {'value': '37', 'value_name': 'white', 'original_value': '37', 'colour_type': ColourType.FG, 'bright': False},
+            'bg_token': {'value': '40', 'value_name': 'black', 'original_value': '40', 'colour_type': ColourType.BG, 'ice_colours': False},
+            'split_components': True,
+        }
+        assert asdict(token) == expected
 
     def test_color8_token_str(self) -> None:
-        token = Color8Token(value='31;44', params=['31', '44'])
+        token = ColorToken(value='31;44', split_components=True)
         assert str(token) == '\x1b[31;44m'
 
 

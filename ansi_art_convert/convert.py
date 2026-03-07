@@ -8,14 +8,13 @@ from argparse import ArgumentParser
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from itertools import batched, chain, pairwise
+from itertools import batched
 from typing import Any, ClassVar, Iterator, List, Protocol
 
 from laser_prynter import pp
 
 from ansi_art_convert.encoding import SupportedEncoding, detect_encoding
 from ansi_art_convert.font_data import FONT_ALIASES, FONT_OFFSETS, UNICODE_TO_CP437
-from ansi_art_convert.log import DEBUG, dprint
 from ansi_art_convert.sauce import SauceRecord, SauceRecordExtended
 from ansi_art_convert.terminals.alacritty import AlacrittyClient
 
@@ -50,7 +49,7 @@ class ANSIToken(Token):
 def get_glyph_offset(font_name: str) -> int:
     if font_name in FONT_OFFSETS:
         offset = FONT_OFFSETS[font_name]
-        dprint(f'font_name: {font_name!r} -> offset: {hex(offset)}')
+        print(f'font_name: {font_name!r} -> offset: {hex(offset)}')
         return offset
     else:
         raise ValueError(f'Unknown font_name: {font_name!r}')
@@ -245,15 +244,7 @@ class ColourType(Enum):
 
 
 @dataclass
-class ColorFGToken(ANSIToken): ...
-
-
-@dataclass
-class ColorBGToken(ANSIToken): ...
-
-
-@dataclass
-class TrueColorFGToken(ColorFGToken):
+class TrueColorFGToken(ANSIToken):
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
 
     def __str__(self) -> str:
@@ -269,7 +260,7 @@ class TrueColorFGToken(ColorFGToken):
 
 
 @dataclass
-class TrueColorBGToken(ColorBGToken):
+class TrueColorBGToken(ANSIToken):
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
 
     def __str__(self) -> str:
@@ -285,7 +276,7 @@ class TrueColorBGToken(ColorBGToken):
 
 
 @dataclass
-class Color256FGToken(ColorFGToken):
+class Color256FGToken(ANSIToken):
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
 
     def __str__(self) -> str:
@@ -301,7 +292,7 @@ class Color256FGToken(ColorFGToken):
 
 
 @dataclass
-class Color256BGToken(ColorBGToken):
+class Color256BGToken(ANSIToken):
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
 
     def __str__(self) -> str:
@@ -361,84 +352,84 @@ COLOUR_8_BG_VALUES = COLOUR_8_BG_VALUES | COLOUR_8_BG_BRIGHT_VALUES
 COLOUR_8_VALUES = COLOUR_8_FG_VALUES | COLOUR_8_BG_VALUES
 
 
+# @dataclass
+# class Color8Token(ANSIToken):
+#     params: list[str] = field(default_factory=list)
+#     ice_colours: bool = field(repr=False, default=False)
+#     bright_bg: bool = field(init=False, default=False)
+#     bright_fg: bool = field(init=False, default=False)
+#     sgr_tokens: list[SGRToken] = field(init=False, default_factory=list)
+#     fg_token: Color8FGToken | None = field(init=False, default=None)
+#     bg_token: Color8BGToken | None = field(init=False, default=None)
+#     tokens: list[ANSIToken] = field(init=False, default_factory=list)
+
+#     def __post_init__(self) -> None:
+#         super().__post_init__()
+#         for param in self.params:
+#             if param in SGR_CODES:
+#                 if self.ice_colours and param == '5':
+#                     self.bright_bg = True
+#                     continue
+#                 elif param == '1':
+#                     self.bright_fg = True
+#                 t = SGRToken(value=param)
+#                 self.sgr_tokens.append(t)
+#                 self.tokens.append(t)
+#             elif param in COLOUR_8_FG_VALUES:
+#                 self.fg_token = Color8FGToken(value=param, bright=self.bright_fg)
+#                 self.tokens.append(self.fg_token)
+#             elif param in COLOUR_8_BG_VALUES:
+#                 ice_colours = self.ice_colours and self.bright_bg
+#                 self.bg_token = Color8BGToken(value=param, ice_colours=ice_colours)
+#                 self.tokens.append(self.bg_token)
+
+#     def generate_tokens(self, curr_fg: Color8FGToken | None, curr_bg: Color8BGToken | None) -> Iterator[ANSIToken]:
+#         if self.sgr_tokens:
+#             if SGRToken(value='0') in self.sgr_tokens:
+#                 curr_fg = Color8FGToken(value='37', bright=self.bright_fg)
+#                 curr_bg = Color8BGToken(value='40', ice_colours=self.bright_bg)
+#             yield from self.sgr_tokens
+#         if self.fg_token:
+#             yield self.fg_token
+#         else:
+#             if curr_fg is None:
+#                 yield Color8FGToken(value='37', bright=self.bright_fg)
+#             elif isinstance(curr_fg, Color8FGToken):
+#                 yield Color8FGToken(value=curr_fg.original_value, bright=self.bright_fg)
+
+#         bright_bg = False
+#         if self.bg_token and isinstance(self.bg_token, Color8BGToken) and self.bg_token.ice_colours:
+#             bright_bg = True
+#         if curr_bg and isinstance(curr_bg, Color8BGToken) and curr_bg.ice_colours:
+#             bright_bg = True
+#         if self.bright_bg:
+#             bright_bg = True
+
+#         if self.bg_token:
+#             yield Color8BGToken(value=self.bg_token.original_value, ice_colours=bright_bg)
+#         else:
+#             if curr_bg is None:
+#                 yield Color8BGToken(value='40', ice_colours=bright_bg)
+#             elif isinstance(curr_bg, Color8BGToken):
+#                 yield Color8BGToken(value=curr_bg.original_value, ice_colours=bright_bg)
+
+#     def __str__(self) -> str:
+#         return f'\x1b[{self.value}m'
+
+#     def repr(self) -> str:
+#         lines = [
+#             f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m',
+#             '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+#             '  {title:<20s} {value!r}'.format(title='params:', value=self.params),
+#             '  {title:<20s} {value!r}'.format(title='ice_colours:', value=self.ice_colours),
+#         ]
+#         for t in self.tokens:
+#             lines.append('\n'.join(['  ' + line for line in t.repr().split('\n')]))
+#         return '\n'.join(lines)
+
+
 @dataclass
-class Color8Token(ANSIToken):
-    params: list[str] = field(default_factory=list)
-    ice_colours: bool = field(repr=False, default=False)
-    bright_bg: bool = field(init=False, default=False)
-    bright_fg: bool = field(init=False, default=False)
-    sgr_tokens: list[SGRToken] = field(init=False, default_factory=list)
-    fg_token: Color8FGToken | None = field(init=False, default=None)
-    bg_token: Color8BGToken | None = field(init=False, default=None)
-    tokens: list[ANSIToken] = field(init=False, default_factory=list)
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        for param in self.params:
-            if param in SGR_CODES:
-                if self.ice_colours and param == '5':
-                    self.bright_bg = True
-                    continue
-                elif param == '1':
-                    self.bright_fg = True
-                t = SGRToken(value=param)
-                self.sgr_tokens.append(t)
-                self.tokens.append(t)
-            elif param in COLOUR_8_FG_VALUES:
-                self.fg_token = Color8FGToken(value=param, bright=self.bright_fg)
-                self.tokens.append(self.fg_token)
-            elif param in COLOUR_8_BG_VALUES:
-                ice_colours = self.ice_colours and self.bright_bg
-                self.bg_token = Color8BGToken(value=param, ice_colours=ice_colours)
-                self.tokens.append(self.bg_token)
-
-    def generate_tokens(self, curr_fg: ColorFGToken | None, curr_bg: ColorBGToken | None) -> Iterator[ANSIToken]:
-        if self.sgr_tokens:
-            if SGRToken(value='0') in self.sgr_tokens:
-                curr_fg = Color8FGToken(value='37', bright=self.bright_fg)
-                curr_bg = Color8BGToken(value='40', ice_colours=self.bright_bg)
-            yield from self.sgr_tokens
-        if self.fg_token:
-            yield self.fg_token
-        else:
-            if curr_fg is None:
-                yield Color8FGToken(value='37', bright=self.bright_fg)
-            elif isinstance(curr_fg, Color8FGToken):
-                yield Color8FGToken(value=curr_fg.original_value, bright=self.bright_fg)
-
-        bright_bg = False
-        if self.bg_token and isinstance(self.bg_token, Color8BGToken) and self.bg_token.ice_colours:
-            bright_bg = True
-        if curr_bg and isinstance(curr_bg, Color8BGToken) and curr_bg.ice_colours:
-            bright_bg = True
-        if self.bright_bg:
-            bright_bg = True
-
-        if self.bg_token:
-            yield Color8BGToken(value=self.bg_token.original_value, ice_colours=bright_bg)
-        else:
-            if curr_bg is None:
-                yield Color8BGToken(value='40', ice_colours=bright_bg)
-            elif isinstance(curr_bg, Color8BGToken):
-                yield Color8BGToken(value=curr_bg.original_value, ice_colours=bright_bg)
-
-    def __str__(self) -> str:
-        return f'\x1b[{self.value}m'
-
-    def repr(self) -> str:
-        lines = [
-            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
-            '  {title:<20s} {value!r}'.format(title='params:', value=self.params),
-            '  {title:<20s} {value!r}'.format(title='ice_colours:', value=self.ice_colours),
-        ]
-        for t in self.tokens:
-            lines.append('\n'.join(['  ' + line for line in t.repr().split('\n')]))
-        return '\n'.join(lines)
-
-
-@dataclass
-class Color8FGToken(ColorFGToken):
+class Color8FGToken(ANSIToken):
     value_map = COLOUR_8_FG_VALUES
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
     bright: bool = False
@@ -463,7 +454,7 @@ class Color8FGToken(ColorFGToken):
 
 
 @dataclass
-class Color8BGToken(ColorBGToken):
+class Color8BGToken(ANSIToken):
     value_map = COLOUR_8_BG_VALUES
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
     ice_colours: bool = field(default=False)
@@ -517,14 +508,60 @@ class SGRToken(ANSIToken):
 
 
 @dataclass
+class ColorToken(ANSIToken):
+    'A color token that preserves the original escape sequence without manipulation.'
+
+    ice_colour_mode: bool = field(repr=False, default=False)
+    sgr_token: SGRToken | None = field(init=False, default=None)
+    fg_token: Color8FGToken | None = field(init=False, default=None)
+    bg_token: Color8BGToken | None = field(init=False, default=None)
+    split_components: bool = field(default=False, repr=False)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.split_components:
+            self.split()
+
+    def split(self) -> None:
+        components = self.value.split(';')
+
+        sgr_code = None
+        for param in components:
+            if param in SGR_CODES:
+                sgr_code = SGRToken(value=param)
+                break
+
+        bright_fg, bright_bg = False, False
+
+        if sgr_code is not None:
+            bright_fg = sgr_code.value == '1'
+            bright_bg = sgr_code.value == '5' and self.ice_colour_mode
+            self.sgr_token = sgr_code
+
+        for param in components:
+            if param in COLOUR_8_FG_VALUES:
+                self.fg_token = Color8FGToken(value=param, bright=bright_fg)
+            elif param in COLOUR_8_BG_VALUES:
+                self.bg_token = Color8BGToken(value=param, ice_colours=bright_bg)
+
+    def __str__(self) -> str:
+        return f'\x1b[{self.value}m'
+
+    def repr(self) -> str:
+        return '\n'.join([
+            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m',
+            '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+        ])
+
+
+@dataclass
 class NewLineToken(ANSIToken):
     def __str__(self) -> str:
         return '\n'
 
     def repr(self) -> str:
         return '\n'.join([
-            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m'
-            + '{title:<s} {value!r}'.format(title='value:', value=self.value),
+            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m' + '{title:<s} {value!r}'.format(title='value:', value=self.value),
         ])
 
 
@@ -535,8 +572,7 @@ class EOFToken(ANSIToken):
 
     def repr(self) -> str:
         return '\n'.join([
-            f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m'
-            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m' + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
         ])
 
 
@@ -544,8 +580,7 @@ class EOFToken(ANSIToken):
 class UnknownToken(ANSIToken):
     def repr(self) -> str:
         return '\n'.join([
-            f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m'
-            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m' + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
         ])
 
 
@@ -591,8 +626,8 @@ class Tokeniser:
         else:
             self._textTokenType = TextToken
 
-        dprint(f'Using extended sauce: {self.sauce!r}')
-        dprint(f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}')
+        print(f'Using extended sauce: {self.sauce!r}')
+        print(f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}')
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name == 'glyph_offset':
@@ -616,8 +651,7 @@ class Tokeniser:
                     return [TrueColorFGToken(value=rgb_value)]
 
         if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 'm':
-            params = ''.join(code_chars[2:-1]).split(';')
-            return [Color8Token(value=';'.join(params), params=params, ice_colours=self.ice_colours)]
+            return [ColorToken(value=''.join(code_chars[2:-1]), split_components=True)]
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
             t = ControlToken(value=''.join(code_chars))
@@ -656,8 +690,7 @@ class Tokeniser:
                     yield from self.create_tokens(currCode)
                     currCode = []
             else:
-                if DEBUG:
-                    self.counts[(ch, hex(ord(ch)))] += 1
+                self.counts[(ch, hex(ord(ch)))] += 1
                 if ch == '\n':
                     if currText:
                         yield self._textTokenType(value=''.join(currText))
@@ -680,8 +713,8 @@ class Renderer:
     tokeniser: Tokeniser = field(repr=False)
     _currLine: List[ANSIToken] = field(default_factory=list, repr=False)
     _currLength: int = field(default=0, repr=False)
-    _currFG: ColorFGToken | None = field(default=None, repr=False)
-    _currBG: ColorBGToken | None = field(default=None, repr=False)
+    _currFG: Color8FGToken | None = field(default=None, repr=False)
+    _currBG: Color8BGToken | None = field(default=None, repr=False)
     _currSGR: ANSIToken | None = field(default=None, repr=False)
     width: int = field(init=False)
 
@@ -702,178 +735,39 @@ class Renderer:
         if self._currBG:
             self._currLine.append(self._currBG)
 
-    def gen_lines(self) -> Iterator[list[ANSIToken]]:
-        'Split tokens into lines at width, or each newline char'
-
-        skips = 0
-
-        for t, tNext in pairwise(chain(self.tokeniser.tokenise(), [EndOfFile()])):
-            if skips > 0:
-                skips -= 1
-                continue
-
-            if isinstance(t, Color8Token):
-                tokens = list(t.generate_tokens(self._currFG, self._currBG))
-                self._currLine.extend(tokens)
-
-                for tok in tokens:
-                    if isinstance(tok, SGRToken):
-                        if tok.value_name == 'Reset':
-                            self._currFG, self._currBG, self._currSGR = None, None, None
-                        else:
-                            self._currSGR = tok
-                    elif isinstance(tok, Color8FGToken):
-                        self._currFG = tok
-                    elif isinstance(tok, Color8BGToken):
-                        self._currBG = tok
-
-            elif isinstance(t, TrueColorFGToken):
-                self._currLine.append(t)
-                self._currFG = t
-
-            elif isinstance(t, TrueColorBGToken):
-                self._currLine.append(t)
-                self._currBG = t
-
-            elif isinstance(t, ControlToken) and t.subtype == 'A':
-                if isinstance(tNext, C0Token) and tNext.value_name == 'CR':
-                    skips = 2
-                elif isinstance(tNext, ControlToken) and tNext.value_name == 'CursorForward':
-                    skips = 1
-
-            elif isinstance(t, (TextToken, CP437Token, ControlToken)):
-                dprint(f'Text/Control token: {t!r}, current line length: {self._currLength}, width: {self.width}')
-                if self._currLength + len(str(t)) == self.width:
-                    dprint(f'Exact fit for token: {t!r}, yielding line with reset and newline')
-
-                    yield self._currLine + [t]
-
-                    self._currLine, self._currLength = [], 0
-                    self._add_current_colors()
-                    continue
-
-                if self._currLength + len(str(t)) < self.width:
-                    dprint(
-                        f'Adding token to current line: {t!r}, new line length would be: {self._currLength + len(str(t))}'
-                    )
-                    self._currLine.append(t)
-                    self._currLength += len(str(t))
-                    continue
-
-                if not isinstance(t, (TextToken, CP437Token)):
-                    continue
-                for chunk in self.split_text_token(t, self.width - self._currLength):
-                    self._currLine.append(chunk)
-                    self._currLength += len(str(chunk))
-
-                    if self._currLength == self.width:
-                        yield self._currLine
-
-                        self._currLine, self._currLength = [], 0
-                        self._add_current_colors()
-
-                    elif self._currLength > self.width:
-                        raise ValueError(f'Logic error in line splitting, {self._currLength} > {self.width}')
-
-            elif isinstance(t, C0Token):
-                dprint(f'C0 Newline token: {t!r}, current line length: {self._currLength}, width: {self.width}')
-                if t.value_name == 'CR':
-                    continue
-
-            elif isinstance(t, NewLineToken):
-                dprint(f'NewLineToken: current line length: {self._currLength}, width: {self.width}')
-                if (isinstance(tNext, ControlToken) and tNext.value_name == 'CursorUp') and len(
-                    self._currLine
-                ) < self.width:
-                    continue
-                yield self._currLine
-                self._currLine, self._currLength = [], 0
-                self._add_current_colors()
-            else:
-                dprint(f'Other token: {t!r}')
-                self._currLine.append(t)
-                if isinstance(t, SGRToken):
-                    if t.value_name == 'Reset':
-                        self._currFG, self._currBG, self._currSGR = None, None, None
-                    else:
-                        self._currSGR = t
-        if self._currLine:
-            yield self._currLine
-
-    def grid(self) -> list[list[ANSIToken]]:
-        'Generate a grid of tokens representing the final output, with line breaks and resets.'
-        return list(self.gen_lines())
-
-    def arrange_grid(self, grid: list[list[ANSIToken]]) -> Iterator[list[ANSIToken]]:
+    def arrange(self) -> Iterator[list[ANSIToken]]:
         '''
-        Process save/restore cursor operations in the grid.
-        This collapses lines that use save/restore cursor to the same line.
-        Uses x/y coordinates to track cursor position for save/restore operations.
+        This stage handles all the "position" related tokens, e.g.
+        - CursorUp/CursorForward/etc control tokens
+        - SaveCursorPosition/RestoreCursorPosition control tokens
+        - Arranges the token stream into lines based on newlines and width
         '''
-        if not grid:
-            return
+        return ...
 
-        output_grid: dict[int, dict[int, ANSIToken]] = {}
-        x, y = 0, 0
-        saved_x, saved_y = 0, 0
+    def translate(self) -> Iterator[list[ANSIToken]]:
+        '''
+        This performs final translations on the arranged tokens, e.g.
+        - Convert Text/CP437 chars into their final Unicode chars based on the font offset
+        - Convert CursorForward control tokens into spaces
+        - Convert CursorPosition control tokens into newlines
+        - Ensure that each line ends with a reset SGR token
+          - and that the next line resumes the same colours (if they were set)
+        - Converts/updates colour tokens as needed.
+          - each line ends in a reset, so the next line needs to resume the same colours (if they were set)
+          - convert colours into their bright variants
+          - for backgrounds, if ice_colours is set, and the SGR code is 1 (bold)
 
-        line_idx = 0
-        while True:
-            if line_idx >= len(grid):
-                break
-            line, token_idx = grid[line_idx], 0
-
-            while True:
-                if token_idx >= len(line):
-                    break
-                token = line[token_idx]
-
-                if isinstance(token, ControlToken):
-                    if token.value_name == 'SaveCursorPosition':
-                        saved_x, saved_y = x, y
-                        token_idx += 1
-                        continue
-                    elif token.value_name == 'RestoreCursorPosition':
-                        x, y = saved_x, saved_y
-                        token_idx += 1
-                        continue
-
-                # Place token at current position
-                if y not in output_grid:
-                    output_grid[y] = {}
-                output_grid[y][x] = token
-                x += 1
-                token_idx += 1
-
-            # After processing line, reset x and move to next y
-            line_idx += 1
-            x = 0
-            y += 1
-
-        # Convert dict grid to list of lists
-        for row_idx in sorted(output_grid.keys()):
-            row = output_grid[row_idx]
-            line_tokens = [row[col_idx] for col_idx in sorted(row.keys())]
-            if line_tokens:
-                yield line_tokens
+        '''
+        return ...
 
     def render(self) -> str:
         '''
         Render an arranged grid of tokens to a string.
         Each line gets a reset sequence at the end.
-        '''
-        grid: list[list[ANSIToken]] = list(self.arrange_grid(self.grid()))
-        lines = []
-        for line in grid:
-            lines.append(''.join(map(str, line)) + '\x1b[0m\n')
-        return ''.join(lines)
 
-    def iter_lines(self) -> Iterator[str]:
-        for i, line in enumerate(self.gen_lines()):
-            if DEBUG:
-                print(f'\n\x1b[30;103m[{i + 1}]:\x1b[0m\n{"\n".join([el.repr() for el in line])}')
-            yield ''.join(map(str, line)) + '\x1b[0m\n'
-        yield str(EOFToken(value=''))
+        '''
+
+        pass
 
 
 def parse_args() -> dict[str, Any]:
@@ -955,7 +849,8 @@ def run(args: dict[str, Any]) -> None:
     if 'font_name' in args and args['font_name']:
         args['font_name'] = FONT_ALIASES[args['font_name']]
     global DEBUG
-    DEBUG = args.pop('verbose', False)
+    DEBUG = True  # args.pop('verbose', False)
+    del args['verbose']
     pp.enabled = not DEBUG
 
     sauce_only = args.pop('sauce_only', False)
@@ -968,17 +863,16 @@ def run(args: dict[str, Any]) -> None:
 
     t = Tokeniser(**(args | {'encoding': encoding, 'sauce': sauce_extended, 'data': data}))
     r = Renderer(fpath=args['fpath'], tokeniser=t)
-    dprint('\nRendered string:')
+    print('\nRendered string:')
     try:
         if AlacrittyClient.session_is_custom_alacritty():
             AlacrittyClient().with_font(t.font_name).update_config()
         print(r.render(), end='')
     except BrokenPipeError as e:
-        dprint(f'BrokenPipeError: {e}')
+        print(f'BrokenPipeError: {e}')
         sys.exit(1)
 
-    if DEBUG:
-        dprint(pprint.pformat(t.counts.most_common()))
+    print(pprint.pformat(t.counts.most_common()))
 
 
 def main() -> None:
