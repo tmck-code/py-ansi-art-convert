@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 'Unit tests for Tokeniser class and tokenise() method in convert.py'
 
+from dataclasses import asdict
+
 import pytest
 
 from ansi_art_convert.convert import (
     C0Token,
-    Color8Token,
+    Color8BGToken,
+    Color8FGToken,
+    ColorToken,
     ControlToken,
     CP437Token,
     NewLineToken,
+    SGRToken,
     TextToken,
     Tokeniser,
     TrueColorBGToken,
@@ -19,6 +24,17 @@ from ansi_art_convert.convert import (
 )
 from ansi_art_convert.encoding import SupportedEncoding
 from test.helper import create_mock_sauce
+
+
+class TokeniserTest:
+    def setup_class(self) -> None:
+        self.sauce = create_mock_sauce()
+        self.tokeniser = Tokeniser(
+            fpath='/test/file.ans',
+            sauce=self.sauce,
+            data='',
+            font_name='IBM VGA',
+        )
 
 
 class TestGetGlyphOffset:
@@ -65,7 +81,7 @@ class TestTokeniserInit:
         assert tokeniser.ice_colours is True
 
 
-class TestTokeniserCreateTokens:
+class TestTokeniserColourTokens:
     'Test create_tokens method'
 
     def setup_class(self) -> None:
@@ -78,39 +94,38 @@ class TestTokeniserCreateTokens:
         )
 
     def test_create_color_token(self) -> None:
-        result = self.tokeniser.create_tokens(list('\x1b[31m'))
+        result = self.tokeniser.create_tokens(['\x1b', '[', '31', 'm'])
         expected = [
-            Color8Token(
-                value='31',
-                params=['31'],
+            ColorToken(
+                parts=['31'],
+                sgr_token=None,
+                fg_token=Color8FGToken(value='31', bright=False),
+                bg_token=None,
+                split_components=True,
             )
         ]
-        assert result == expected
+        assert result[0].value == expected[0].value
+        assert asdict(result[0]) == asdict(expected[0])
 
     def test_create_color_token_multiple_params(self) -> None:
-        result = self.tokeniser.create_tokens(list('\x1b[1;31m'))
+        result = self.tokeniser.create_tokens(['\x1b', '[', '1', ';', '31', 'm'])
         expected = [
-            Color8Token(
-                value='1;31',
-                params=['1', '31'],
+            ColorToken(
+                parts=['1', '31'],
+                sgr_token=SGRToken(value='1'),
+                fg_token=Color8FGToken(value='31', bright=True),
+                bg_token=None,
+                split_components=True,
             )
         ]
-        assert result == expected
-
-    def test_create_cursor_up_token(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b', '[', '5', 'A'])
-        expected = [
-            ControlToken(
-                value='\x1b[5A',
-            )
-        ]
-        assert result == expected
+        assert result[0].value == expected[0].value
+        assert asdict(result[0]) == asdict(expected[0])
 
     def test_create_true_color_fg_token(self) -> None:
         result = self.tokeniser.create_tokens(['\x1b', '[', '1', ';', '255', ';', '128', ';', '64', 't'])
         expected = [
             TrueColorFGToken(
-                value='255,128,64',
+                value='255;128;64',
             )
         ]
         assert result == expected
@@ -119,13 +134,15 @@ class TestTokeniserCreateTokens:
         result = self.tokeniser.create_tokens(['\x1b', '[', '0', ';', '0', ';', '255', ';', '128', 't'])
         expected = [
             TrueColorBGToken(
-                value='0,255,128',
+                value='0;255;128',
             )
         ]
         assert result == expected
 
+
+class TestTokeniseUnknown(TokeniserTest):
     def test_create_unknown_token(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b', '[', '9', '9', '9', 'Z'])
+        result = self.tokeniser.create_tokens(['\x1b[999Z'])
         expected = [
             UnknownToken(
                 value='\x1b[999Z',
@@ -177,9 +194,17 @@ class TestTokeniserTokenise:
         self.tokeniser.data = '\x1b[31mRed\x1b[0m'
         result = list(self.tokeniser.tokenise())
         expected = [
-            Color8Token(value='31', params=['31']),
+            ColorToken(
+                parts=['31'],
+                fg_token=Color8FGToken(value='31', bright=False),
+                split_components=True,
+            ),
             CP437Token(value='Red', offset=self.tokeniser.glyph_offset),
-            Color8Token(value='0', params=['0']),
+            ColorToken(
+                parts=['0'],
+                sgr_token=SGRToken(value='0'),
+                split_components=True,
+            ),
         ]
         assert result == expected
 
@@ -187,11 +212,23 @@ class TestTokeniserTokenise:
         self.tokeniser.data = '\x1b[31mRed\x1b[32mGreen\x1b[34mBlue'
         result = list(self.tokeniser.tokenise())
         expected = [
-            Color8Token(value='31', params=['31']),
+            ColorToken(
+                parts=['31'],
+                fg_token=Color8FGToken(value='31', bright=False),
+                split_components=True,
+            ),
             CP437Token(value='Red', offset=self.tokeniser.glyph_offset),
-            Color8Token(value='32', params=['32']),
+            ColorToken(
+                parts=['32'],
+                fg_token=Color8FGToken(value='32', bright=False),
+                split_components=True,
+            ),
             CP437Token(value='Green', offset=self.tokeniser.glyph_offset),
-            Color8Token(value='34', params=['34']),
+            ColorToken(
+                parts=['34'],
+                fg_token=Color8FGToken(value='34', bright=False),
+                split_components=True,
+            ),
             CP437Token(value='Blue', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected
@@ -225,9 +262,21 @@ class TestTokeniserTokenise:
         self.tokeniser.data = '\x1b[31m\x1b[44m\x1b[1m'
         result = list(self.tokeniser.tokenise())
         expected = [
-            Color8Token(value='31', params=['31']),
-            Color8Token(value='44', params=['44']),
-            Color8Token(value='1', params=['1']),
+            ColorToken(
+                parts=['31'],
+                fg_token=Color8FGToken(value='31', bright=False),
+                split_components=True,
+            ),
+            ColorToken(
+                parts=['44'],
+                bg_token=Color8BGToken(value='44', ice_colours=False),
+                split_components=True,
+            ),
+            ColorToken(
+                parts=['1'],
+                sgr_token=SGRToken(value='1'),
+                split_components=True,
+            ),
         ]
         assert result == expected
 
@@ -236,12 +285,25 @@ class TestTokeniserTokenise:
         self.tokeniser.data = complex_data
         result = list(self.tokeniser.tokenise())
         expected = [
-            Color8Token(value='31', params=['31']),
+            ColorToken(
+                parts=['31'],
+                fg_token=Color8FGToken(value='31', bright=False),
+                split_components=True,
+            ),
             CP437Token(value='Red', offset=self.tokeniser.glyph_offset),
-            Color8Token(value='0', params=['0']),
+            ColorToken(
+                parts=['0'],
+                sgr_token=SGRToken(value='0'),
+                split_components=True,
+            ),
             NewLineToken(value='\n'),
             CP437Token(value='Normal', offset=self.tokeniser.glyph_offset),
-            Color8Token(value='1;32', params=['1', '32']),
+            ColorToken(
+                parts=['1', '32'],
+                sgr_token=SGRToken(value='1'),
+                fg_token=Color8FGToken(value='32', bright=True),
+                split_components=True,
+            ),
             CP437Token(value='Bold Green', offset=self.tokeniser.glyph_offset),
             ControlToken(value='\x1b[10C'),
             CP437Token(value='Spaced', offset=self.tokeniser.glyph_offset),
@@ -281,16 +343,32 @@ class TestTokeniserTokenise:
         ]
         assert result == expected
 
+    def test_create_cursor_up_token(self) -> None:
+        self.tokeniser.data = '\x1b[5A'
+        result = list(self.tokeniser.tokenise())
+        expected = [
+            ControlToken(
+                value='\x1b[5A',
+            )
+        ]
+        assert result == expected
+
     def test_tokenise_preserves_order(self) -> None:
         self.tokeniser.data = 'A\x1b[31mB\nC'
+        # result = [asdict(t) for t in self.tokeniser.tokenise()]
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='A', offset=self.tokeniser.glyph_offset),
-            Color8Token(value='31', params=['31']),
+            ColorToken(
+                parts=['31'],
+                fg_token=Color8FGToken(value='31', bright=False),
+                split_components=True,
+            ),
             CP437Token(value='B', offset=self.tokeniser.glyph_offset),
             NewLineToken(value='\n'),
             CP437Token(value='C', offset=self.tokeniser.glyph_offset),
         ]
+        # expected = [asdict(t) for t in expected]
         assert result == expected
 
 

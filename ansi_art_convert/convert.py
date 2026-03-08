@@ -248,7 +248,7 @@ class TrueColorFGToken(ANSIToken):
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
 
     def __str__(self) -> str:
-        r, g, b = self.value.split(',')
+        r, g, b = self.value.split(';')
         return f'\x1b[38;2;{r};{g};{b}m'
 
     def repr(self) -> str:
@@ -264,7 +264,7 @@ class TrueColorBGToken(ANSIToken):
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
 
     def __str__(self) -> str:
-        r, g, b = self.value.split(',')
+        r, g, b = self.value.split(';')
         return f'\x1b[48;2;{r};{g};{b}m'
 
     def repr(self) -> str:
@@ -508,25 +508,25 @@ class SGRToken(ANSIToken):
 
 
 @dataclass
-class ColorToken(ANSIToken):
+class ColorToken:
     'A color token that preserves the original escape sequence without manipulation.'
 
+    parts: list[str] = field(default_factory=list, repr=False)
+    value: str = field(init=False)
     ice_colour_mode: bool = field(repr=False, default=False)
-    sgr_token: SGRToken | None = field(init=False, default=None)
-    fg_token: Color8FGToken | None = field(init=False, default=None)
-    bg_token: Color8BGToken | None = field(init=False, default=None)
+    sgr_token: SGRToken | None = field(default=None)
+    fg_token: Color8FGToken | None = field(default=None)
+    bg_token: Color8BGToken | None = field(default=None)
     split_components: bool = field(default=False, repr=False)
 
     def __post_init__(self) -> None:
-        super().__post_init__()
         if self.split_components:
             self.split()
+        self.value = ';'.join(self.parts)
 
     def split(self) -> None:
-        components = self.value.split(';')
-
         sgr_code = None
-        for param in components:
+        for param in self.parts:
             if param in SGR_CODES:
                 sgr_code = SGRToken(value=param)
                 break
@@ -538,7 +538,7 @@ class ColorToken(ANSIToken):
             bright_bg = sgr_code.value == '5' and self.ice_colour_mode
             self.sgr_token = sgr_code
 
-        for param in components:
+        for param in self.parts:
             if param in COLOUR_8_FG_VALUES:
                 self.fg_token = Color8FGToken(value=param, bright=bright_fg)
             elif param in COLOUR_8_BG_VALUES:
@@ -561,7 +561,8 @@ class NewLineToken(ANSIToken):
 
     def repr(self) -> str:
         return '\n'.join([
-            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m' + '{title:<s} {value!r}'.format(title='value:', value=self.value),
+            f'\x1b[93m{self.__class__.__name__:<20}\x1b[0m'
+            + '{title:<s} {value!r}'.format(title='value:', value=self.value),
         ])
 
 
@@ -572,7 +573,8 @@ class EOFToken(ANSIToken):
 
     def repr(self) -> str:
         return '\n'.join([
-            f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m' + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            f'\x1b[90m{self.__class__.__name__:<20}\x1b[0m'
+            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
         ])
 
 
@@ -580,7 +582,8 @@ class EOFToken(ANSIToken):
 class UnknownToken(ANSIToken):
     def repr(self) -> str:
         return '\n'.join([
-            f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m' + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
+            f'\x1b[91m{self.__class__.__name__:<20}\x1b[0m'
+            + '  {title:<20s} {value!r}'.format(title='value:', value=self.value),
         ])
 
 
@@ -644,14 +647,15 @@ class Tokeniser:
             params = ''.join(code_chars[2:-1]).split(';')
             if len(params) == 4 and params[0] in ['0', '1']:
                 mode, r, g, b = params
-                rgb_value = f'{int(r)},{int(g)},{int(b)}'
+                rgb_value = f'{int(r)};{int(g)};{int(b)}'
                 if mode == '0':
                     return [TrueColorBGToken(value=rgb_value)]
                 elif mode == '1':
                     return [TrueColorFGToken(value=rgb_value)]
 
         if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 'm':
-            return [ColorToken(value=''.join(code_chars[2:-1]), split_components=True)]
+            params = ''.join(code_chars[2:-1]).split(';')
+            return [ColorToken(parts=params, split_components=True)]
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
             t = ControlToken(value=''.join(code_chars))

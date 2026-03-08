@@ -273,10 +273,10 @@ class TestTrueColorTokens:
     'Test 24-bit true color tokens'
 
     def test_true_color_fg(self) -> None:
-        token = TrueColorFGToken(value='255,128,64')
+        token = TrueColorFGToken(value='255;128;64')
         expected = {
-            'value': '255,128,64',
-            'original_value': '255,128,64',
+            'value': '255;128;64',
+            'original_value': '255;128;64',
             'value_name': '',
             'colour_type': ColourType.FG,
         }
@@ -284,10 +284,10 @@ class TestTrueColorTokens:
         assert str(token) == '\x1b[38;2;255;128;64m'
 
     def test_true_color_bg(self) -> None:
-        token = TrueColorBGToken(value='0,128,255')
+        token = TrueColorBGToken(value='0;128;255')
         expected = {
-            'value': '0,128,255',
-            'original_value': '0,128,255',
+            'value': '0;128;255',
+            'original_value': '0;128;255',
             'value_name': '',
             'colour_type': ColourType.BG,
         }
@@ -295,11 +295,11 @@ class TestTrueColorTokens:
         assert str(token) == '\x1b[48;2;0;128;255m'
 
     def test_true_color_fg_black(self) -> None:
-        token = TrueColorFGToken(value='0,0,0')
+        token = TrueColorFGToken(value='0;0;0')
         assert str(token) == '\x1b[38;2;0;0;0m'
 
     def test_true_color_bg_white(self) -> None:
-        token = TrueColorBGToken(value='255,255,255')
+        token = TrueColorBGToken(value='255;255;255')
         assert str(token) == '\x1b[48;2;255;255;255m'
 
 
@@ -445,11 +445,10 @@ class TestColorToken:
     'Test composite 8-color token that generates sub-tokens'
 
     def test_fg(self) -> None:
-        token = ColorToken(value='31')
+        token = ColorToken(parts=['31'])
         expected = {
+            'parts': ['31'],
             'value': '31',
-            'value_name': '',
-            'original_value': '31',
             'ice_colour_mode': False,
             'sgr_token': None,
             'fg_token': None,
@@ -460,11 +459,10 @@ class TestColorToken:
         assert asdict(token) == expected
 
     def test_bg(self) -> None:
-        token = ColorToken(value='44')
+        token = ColorToken(parts=['44'])
         expected = {
+            'parts': ['44'],
             'value': '44',
-            'value_name': '',
-            'original_value': '44',
             'ice_colour_mode': False,
             'sgr_token': None,
             'fg_token': None,
@@ -474,11 +472,10 @@ class TestColorToken:
         assert asdict(token) == expected
 
     def test_fg_and_bg(self) -> None:
-        token = ColorToken(value='31;44', split_components=True)
+        token = ColorToken(parts=['31', '44'], split_components=True)
         expected = {
+            'parts': ['31', '44'],
             'value': '31;44',
-            'value_name': '',
-            'original_value': '31;44',
             'ice_colour_mode': False,
             'sgr_token': None,
             'fg_token': {
@@ -501,11 +498,10 @@ class TestColorToken:
         assert asdict(token) == expected
 
     def test_fg_and_sgr(self) -> None:
-        token = ColorToken(value='1;31', split_components=True)
+        token = ColorToken(parts=['1', '31'], split_components=True)
         expected = {
+            'parts': ['1', '31'],
             'value': '1;31',
-            'value_name': '',
-            'original_value': '1;31',
             'ice_colour_mode': False,
             'sgr_token': {
                 'value': '1',
@@ -525,11 +521,10 @@ class TestColorToken:
         assert asdict(token) == expected
 
     def test_sgr_reset(self) -> None:
-        token = ColorToken(value='0')
+        token = ColorToken(parts=['0'])
         expected = {
+            'parts': ['0'],
             'value': '0',
-            'value_name': '',
-            'original_value': '0',
             'ice_colour_mode': False,
             'sgr_token': None,
             'fg_token': None,
@@ -540,12 +535,11 @@ class TestColorToken:
 
     def test_ice_colours(self) -> None:
         # Test with '5;44' where '5' is the SGR code that triggers ice colors
-        token = ColorToken(value='5;44', split_components=True, ice_colour_mode=True)
+        token = ColorToken(parts=['5', '44'], split_components=True, ice_colour_mode=True)
         # With ice_colour_mode=True, param '5' (BlinkSlow) enables bright background
         expected = {
+            'parts': ['5', '44'],
             'value': '5;44',
-            'value_name': '',
-            'original_value': '5;44',
             'ice_colour_mode': True,
             'sgr_token': {
                 'value': '5',
@@ -565,7 +559,7 @@ class TestColorToken:
         assert asdict(token) == expected
 
     def test_fg_and_bg_2(self) -> None:
-        token = ColorToken(value='31;44', split_components=True)
+        token = ColorToken(parts=['31', '44'], split_components=True)
         # Test individual token attributes
         assert token.fg_token is not None
         assert token.bg_token is not None
@@ -590,21 +584,32 @@ class TestColorToken:
         }
 
     def test_color8_token_generate_tokens_with_reset(self) -> None:
-        token = ColorToken(value='0;37;40', split_components=True)
+        token = ColorToken(parts=['0', '37', '40'], split_components=True)
         expected = {
+            'parts': ['0', '37', '40'],
             'value': '0;37;40',
-            'value_name': '',
-            'original_value': '0;37;40',
             'ice_colour_mode': False,
             'sgr_token': {'value': '0', 'value_name': 'Reset', 'original_value': '0'},
-            'fg_token': {'value': '37', 'value_name': 'white', 'original_value': '37', 'colour_type': ColourType.FG, 'bright': False},
-            'bg_token': {'value': '40', 'value_name': 'black', 'original_value': '40', 'colour_type': ColourType.BG, 'ice_colours': False},
+            'fg_token': {
+                'value': '37',
+                'value_name': 'white',
+                'original_value': '37',
+                'colour_type': ColourType.FG,
+                'bright': False,
+            },
+            'bg_token': {
+                'value': '40',
+                'value_name': 'black',
+                'original_value': '40',
+                'colour_type': ColourType.BG,
+                'ice_colours': False,
+            },
             'split_components': True,
         }
         assert asdict(token) == expected
 
     def test_color8_token_str(self) -> None:
-        token = ColorToken(value='31;44', split_components=True)
+        token = ColorToken(parts=['31', '44'], split_components=True)
         assert str(token) == '\x1b[31;44m'
 
 
