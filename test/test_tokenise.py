@@ -117,11 +117,10 @@ class TestTokeniserColourTokens:
     def test_create_color_token(self) -> None:
         result = self.tokeniser.create_token(['\x1b', '[', '31', 'm'])
         expected = ColorToken(
-            parts=['31'],
+            value='31',
             sgr_token=None,
             fg_token=Color8FGToken(value='31', bright=False),
             bg_token=None,
-            split_components=True,
         )
         assert result.value == expected.value
         assert asdict(result) == asdict(expected)
@@ -129,11 +128,10 @@ class TestTokeniserColourTokens:
     def test_create_color_token_multiple_params(self) -> None:
         result = self.tokeniser.create_token(['\x1b', '[', '1', ';', '31', 'm'])
         expected = ColorToken(
-            parts=['1', '31'],
+            value='1;31',
             sgr_token=SGRToken(value='1'),
             fg_token=Color8FGToken(value='31', bright=True),
             bg_token=None,
-            split_components=True,
         )
 
         assert result.value == expected.value
@@ -169,7 +167,7 @@ class TestTokeniseUnknown(TokeniserTest):
 class TestTokeniserTokenise:
     'Test tokenise method - main tokenization logic'
 
-    def setup_class(self) -> None:
+    def setup_method(self) -> None:
         self.sauce = create_mock_sauce()
         self.tokeniser = Tokeniser(
             sauce=self.sauce,
@@ -200,15 +198,13 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             ColorToken(
-                parts=['31'],
+                value='31',
                 fg_token=Color8FGToken(value='31', bright=False),
-                split_components=True,
             ),
             CP437Token(value='Red', offset=self.tokeniser.glyph_offset),
             ColorToken(
-                parts=['0'],
+                value='0',
                 sgr_token=SGRToken(value='0'),
-                split_components=True,
             ),
         ]
         assert result == expected
@@ -218,21 +214,18 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             ColorToken(
-                parts=['31'],
+                value='31',
                 fg_token=Color8FGToken(value='31', bright=False),
-                split_components=True,
             ),
             CP437Token(value='Red', offset=self.tokeniser.glyph_offset),
             ColorToken(
-                parts=['32'],
+                value='32',
                 fg_token=Color8FGToken(value='32', bright=False),
-                split_components=True,
             ),
             CP437Token(value='Green', offset=self.tokeniser.glyph_offset),
             ColorToken(
-                parts=['34'],
+                value='34',
                 fg_token=Color8FGToken(value='34', bright=False),
-                split_components=True,
             ),
             CP437Token(value='Blue', offset=self.tokeniser.glyph_offset),
         ]
@@ -268,19 +261,16 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             ColorToken(
-                parts=['31'],
+                value='31',
                 fg_token=Color8FGToken(value='31', bright=False),
-                split_components=True,
             ),
             ColorToken(
-                parts=['44'],
+                value='44',
                 bg_token=Color8BGToken(value='44', ice_colours=False),
-                split_components=True,
             ),
             ColorToken(
-                parts=['1'],
+                value='1',
                 sgr_token=SGRToken(value='1'),
-                split_components=True,
             ),
         ]
         assert result == expected
@@ -291,23 +281,20 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             ColorToken(
-                parts=['31'],
+                value='31',
                 fg_token=Color8FGToken(value='31', bright=False),
-                split_components=True,
             ),
             CP437Token(value='Red', offset=self.tokeniser.glyph_offset),
             ColorToken(
-                parts=['0'],
+                value='0',
                 sgr_token=SGRToken(value='0'),
-                split_components=True,
             ),
             NewLineToken(value='\n'),
             CP437Token(value='Normal', offset=self.tokeniser.glyph_offset),
             ColorToken(
-                parts=['1', '32'],
+                value='1;32',
                 sgr_token=SGRToken(value='1'),
                 fg_token=Color8FGToken(value='32', bright=True),
-                split_components=True,
             ),
             CP437Token(value='Bold Green', offset=self.tokeniser.glyph_offset),
             ControlToken(value='\x1b[10C'),
@@ -364,9 +351,8 @@ class TestTokeniserTokenise:
         expected = [
             CP437Token(value='A', offset=self.tokeniser.glyph_offset),
             ColorToken(
-                parts=['31'],
+                value='31',
                 fg_token=Color8FGToken(value='31', bright=False),
-                split_components=True,
             ),
             CP437Token(value='B', offset=self.tokeniser.glyph_offset),
             NewLineToken(value='\n'),
@@ -455,7 +441,6 @@ class TestSaveRestoreCursor:
             f'{self.restore}XXXXXXX\n',
         ])
         self.tokeniser.data = data
-        self.tokeniser.width = 7
 
         result = list(self.tokeniser.tokenise())
         expected = [

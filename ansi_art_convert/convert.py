@@ -28,11 +28,9 @@ class Token(Protocol):
 class ANSIToken(Token):
     value: str
     value_name: str = field(init=False)
-    original_value: str = field(init=False)
     value_map: ClassVar[dict[str, str]] = field(repr=False, default={})
 
     def __post_init__(self) -> None:
-        self.original_value = self.value
         self.value_name = self.value_map.get(self.value, '')
 
     def repr(self) -> str:
@@ -88,7 +86,6 @@ class TextToken(ANSIToken):
     def repr(self) -> str:
         return '\n'.join([
             f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
             '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
             '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
         ])
@@ -142,7 +139,7 @@ class C0Token(TextToken):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.value_name = self.value_map.get(self.original_value, '')
+        self.value_name = self.value_map.get(self.value, '')
         if self.value_name == 'CR':
             self.value = ''
 
@@ -151,7 +148,6 @@ class C0Token(TextToken):
             f'\x1b[33m{self.__class__.__name__:<20}\x1b[0m'
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
             + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
         ])
 
@@ -180,7 +176,6 @@ class CP437Token(ANSIToken):
     def repr(self) -> str:
         return '\n'.join([
             f'\x1b[32m{self.__class__.__name__:<20}\x1b[0m',
-            '  {title:<17s} {value!r}'.format(title='original:', value=self.original_value),
             '  {title:<17s} {value!r}'.format(title='value:', value=self.value),
             '  {title:<17s} {value!r}'.format(title='len:', value=len(self.value)),
         ])
@@ -217,7 +212,6 @@ class ControlToken(ANSIToken):
     value_map = ANSI_CONTROL_CODES
 
     def __post_init__(self) -> None:
-        self.original_value = self.value
         self.subtype = self.value[-1]
         self.value_name = self.value_map.get(self.subtype, '')
         self.value = self.value[2:]
@@ -228,7 +222,6 @@ class ControlToken(ANSIToken):
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
             + '{title:<10s} {value!r}'.format(title='subtype:', value=self.subtype)
-            + '{title:<10s} {value!r}'.format(title='original:', value=self.original_value)
             # + ' {title:<20s} {value!r}'.format(title='spaces:', value=' '*int(self.value[:-1]))
         )
         return lines
@@ -450,7 +443,6 @@ class Color8FGToken(ANSIToken):
             f'\x1b[96m{self.__class__.__name__:<20}\x1b[0m'
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
         ])
 
     def __str__(self) -> str:
@@ -465,7 +457,6 @@ class Color8BGToken(ANSIToken):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.original_value = self.value
         if self.ice_colours:
             self.value = str(int(self.value) + 60)
 
@@ -474,7 +465,6 @@ class Color8BGToken(ANSIToken):
             f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m'
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<10s} {value!r:<6}'.format(title='original:', value=self.original_value)
             + '{title:<12s} {value!r}'.format(title='ice_colours:', value=self.ice_colours)
         ])
 

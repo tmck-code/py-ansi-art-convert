@@ -32,7 +32,6 @@ class TestANSIToken:
         token = ANSIToken(value='test')
         expected = {
             'value': 'test',
-            'original_value': 'test',
             'value_name': '',
         }
 
@@ -46,7 +45,6 @@ class TestANSIToken:
         token = MyToken(value='A')
         expected = {
             'value': 'A',
-            'original_value': 'A',
             'value_name': 'Letter A',
         }
         assert asdict(token) == expected
@@ -66,7 +64,6 @@ class TestTextToken:
         expected = {
             'offset': offset,
             'value': 'A',
-            'original_value': 'A',
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -77,7 +74,6 @@ class TestTextToken:
         expected = {
             'offset': 0xE100,
             'value': 'ABC',
-            'original_value': 'ABC',
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -89,7 +85,6 @@ class TestTextToken:
         expected = {
             'offset': 0xE100,
             'value': '♥',
-            'original_value': '♥',
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -99,7 +94,6 @@ class TestTextToken:
         expected = {
             'offset': 0xE100,
             'value': 'A♥B',
-            'original_value': 'A♥B',
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -110,7 +104,6 @@ class TestTextToken:
         expected = {
             'offset': 0,
             'value': 'ABC',
-            'original_value': 'ABC',
             'value_name': '',
         }
         assert asdict(token) == expected
@@ -124,7 +117,6 @@ class TestC0Token:
             token = C0Token(value='\r', offset=offset)
             expected = {
                 'value': '',
-                'original_value': '\r',
                 'value_name': 'CR',
                 'offset': offset,
             }
@@ -163,7 +155,6 @@ class TestCP437Token:
         token = CP437Token(value='☺', offset=0xE100)
         expected = {
             'value': '☺',  # '☺' is CP437 code 1
-            'original_value': '☺',
             'value_name': '',
             'offset': 0xE100,
         }
@@ -184,7 +175,6 @@ class TestControlTokenCursorUp:
         token = ControlToken(value='\x1b[A')
         expected = {
             'value': 'A',
-            'original_value': '\x1b[A',
             'value_name': 'CursorUp',
             'subtype': 'A',
         }
@@ -196,7 +186,6 @@ class TestControlTokenCursorDown:
         token = ControlToken(value='\x1b[5B')
         expected = {
             'value': '5B',
-            'original_value': '\x1b[5B',
             'value_name': 'CursorDown',
             'subtype': 'B',
         }
@@ -206,7 +195,6 @@ class TestControlTokenCursorDown:
         token = ControlToken(value='\x1b[C')
         expected = {
             'value': 'C',
-            'original_value': '\x1b[C',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -217,7 +205,6 @@ class TestControlTokenCursorDown:
         token = ControlToken(value='\x1b[1C')
         expected = {
             'value': '1C',
-            'original_value': '\x1b[1C',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -228,7 +215,6 @@ class TestControlTokenCursorDown:
         token = ControlToken(value='\x1b[10C')
         expected = {
             'value': '10C',
-            'original_value': '\x1b[10C',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -239,7 +225,6 @@ class TestControlTokenCursorDown:
         token = ControlToken(value='\x1b[1000C')
         expected = {
             'value': '1000C',
-            'original_value': '\x1b[1000C',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -252,7 +237,6 @@ class TestControlTokenCursorPosition:
         token = ControlToken(value='\x1b[10;20H')
         expected = {
             'value': '10;20H',
-            'original_value': '\x1b[10;20H',
             'value_name': 'CursorPosition',
             'subtype': 'H',
         }
@@ -265,7 +249,6 @@ class TestControlTokenEraseInLine:
         token = ControlToken(value='\x1b[K')
         expected = {
             'value': 'K',
-            'original_value': '\x1b[K',
             'value_name': 'EraseInLine',
             'subtype': 'K',
         }
@@ -279,7 +262,6 @@ class TestTrueColorTokens:
         token = TrueColorFGToken(value='255;128;64')
         expected = {
             'value': '255;128;64',
-            'original_value': '255;128;64',
             'value_name': '',
             'colour_type': ColourType.FG,
         }
@@ -290,7 +272,6 @@ class TestTrueColorTokens:
         token = TrueColorBGToken(value='0;128;255')
         expected = {
             'value': '0;128;255',
-            'original_value': '0;128;255',
             'value_name': '',
             'colour_type': ColourType.BG,
         }
@@ -313,7 +294,6 @@ class TestColor256Tokens:
         token = Color256FGToken(value='42')
         expected = {
             'value': '42',
-            'original_value': '42',
             'value_name': '',
             'colour_type': ColourType.FG,
         }
@@ -324,7 +304,6 @@ class TestColor256Tokens:
         token = Color256BGToken(value='196')
         expected = {
             'value': '196',
-            'original_value': '196',
             'value_name': '',
             'colour_type': ColourType.BG,
         }
@@ -347,7 +326,6 @@ class TestColor8FGToken:
         token = Color8FGToken(value='31')
         expected = {
             'value': '31',
-            'original_value': '31',
             'value_name': 'red',
             'colour_type': ColourType.FG,
             'bright': False,
@@ -359,7 +337,6 @@ class TestColor8FGToken:
         token = Color8FGToken(value='34')
         expected = {
             'value': '34',
-            'original_value': '34',
             'value_name': 'blue',
             'colour_type': ColourType.FG,
             'bright': False,
@@ -371,7 +348,6 @@ class TestColor8FGToken:
         token = Color8FGToken(value='91')
         expected = {
             'value': '91',
-            'original_value': '91',
             'value_name': 'bright_red',
             'colour_type': ColourType.FG,
             'bright': False,
@@ -384,7 +360,6 @@ class TestColor8FGToken:
         token = Color8FGToken(value='31', bright=True)
         expected = {
             'value': '91',  # 31 + 60 = 91
-            'original_value': '31',
             'value_name': 'red',  # value_name is set before transformation
             'colour_type': ColourType.FG,
             'bright': True,
@@ -406,7 +381,6 @@ class TestColor8BGToken:
         assert token.colour_type == ColourType.BG
         expected = {
             'value': '41',
-            'original_value': '41',
             'value_name': 'red',
             'colour_type': ColourType.BG,
             'ice_colours': False,
@@ -418,7 +392,6 @@ class TestColor8BGToken:
         token = Color8BGToken(value='44')
         expected = {
             'value': '44',
-            'original_value': '44',
             'value_name': 'blue',
             'colour_type': ColourType.BG,
             'ice_colours': False,
@@ -431,7 +404,6 @@ class TestColor8BGToken:
         token = Color8BGToken(value='41', ice_colours=True)
         expected = {
             'value': '101',  # 41 + 60 = 101
-            'original_value': '41',
             'value_name': 'red',  # value_name is set before transformation
             'colour_type': ColourType.BG,
             'ice_colours': True,
@@ -448,34 +420,42 @@ class TestColorToken:
     'Test composite 8-color token that generates sub-tokens'
 
     def test_fg(self) -> None:
-        token = ColorToken(parts=['31'])
+        token = ColorToken(value='31')
         expected = {
             'parts': ['31'],
             'value': '31',
             'ice_colour_mode': False,
             'sgr_token': None,
-            'fg_token': None,
+            'fg_token': {
+                'bright': False,
+                'colour_type': ColourType.FG,
+                'value': '31',
+                'value_name': 'red',
+            },
             'bg_token': None,
-            'split_components': False,
         }
 
         assert asdict(token) == expected
 
     def test_bg(self) -> None:
-        token = ColorToken(parts=['44'])
+        token = ColorToken(value='44')
         expected = {
             'parts': ['44'],
             'value': '44',
             'ice_colour_mode': False,
             'sgr_token': None,
             'fg_token': None,
-            'bg_token': None,
-            'split_components': False,
+            'bg_token': {
+                'colour_type': ColourType.BG,
+                'ice_colours': False,
+                'value': '44',
+                'value_name': 'blue',
+            },
         }
         assert asdict(token) == expected
 
     def test_fg_and_bg(self) -> None:
-        token = ColorToken(parts=['31', '44'], split_components=True)
+        token = ColorToken(value='31;44')
         expected = {
             'parts': ['31', '44'],
             'value': '31;44',
@@ -484,24 +464,21 @@ class TestColorToken:
             'fg_token': {
                 'value': '31',
                 'value_name': 'red',
-                'original_value': '31',
                 'colour_type': ColourType.FG,
                 'bright': False,
             },
             'bg_token': {
                 'value': '44',
                 'value_name': 'blue',
-                'original_value': '44',
                 'colour_type': ColourType.BG,
                 'ice_colours': False,
             },
-            'split_components': True,
         }
 
         assert asdict(token) == expected
 
     def test_fg_and_sgr(self) -> None:
-        token = ColorToken(parts=['1', '31'], split_components=True)
+        token = ColorToken(value='1;31')
         expected = {
             'parts': ['1', '31'],
             'value': '1;31',
@@ -509,36 +486,35 @@ class TestColorToken:
             'sgr_token': {
                 'value': '1',
                 'value_name': 'Bold',
-                'original_value': '1',
             },
             'fg_token': {
                 'value': '91',  # Bold (SGR 1) makes foreground bright: 31 + 60 = 91
                 'value_name': 'red',
-                'original_value': '31',
                 'colour_type': ColourType.FG,
                 'bright': True,
             },
             'bg_token': None,
-            'split_components': True,
         }
         assert asdict(token) == expected
 
     def test_sgr_reset(self) -> None:
-        token = ColorToken(parts=['0'])
+        token = ColorToken(value='0')
         expected = {
             'parts': ['0'],
             'value': '0',
             'ice_colour_mode': False,
-            'sgr_token': None,
+            'sgr_token': {
+                'value': '0',
+                'value_name': 'Reset',
+            },
             'fg_token': None,
             'bg_token': None,
-            'split_components': False,
         }
         assert asdict(token) == expected
 
     def test_ice_colours(self) -> None:
         # Test with '5;44' where '5' is the SGR code that triggers ice colors
-        token = ColorToken(parts=['5', '44'], split_components=True, ice_colour_mode=True)
+        token = ColorToken(value='5;44', ice_colour_mode=True)
         # With ice_colour_mode=True, param '5' (BlinkSlow) enables bright background
         expected = {
             'parts': ['5', '44'],
@@ -547,22 +523,19 @@ class TestColorToken:
             'sgr_token': {
                 'value': '5',
                 'value_name': 'BlinkSlow',
-                'original_value': '5',
             },
             'fg_token': None,
             'bg_token': {
                 'colour_type': ColourType.BG,
                 'ice_colours': True,
-                'original_value': '44',
                 'value': '104',  # 44 + 60 = 104 (ice colours bright)
                 'value_name': 'blue',
             },
-            'split_components': True,
         }
         assert asdict(token) == expected
 
     def test_fg_and_bg_2(self) -> None:
-        token = ColorToken(parts=['31', '44'], split_components=True)
+        token = ColorToken(value='31;44')
         # Test individual token attributes
         assert token.fg_token is not None
         assert token.bg_token is not None
@@ -572,7 +545,6 @@ class TestColorToken:
         assert asdict(token.fg_token) == {
             'value': '31',
             'value_name': 'red',
-            'original_value': '31',
             'colour_type': ColourType.FG,
             'bright': False,
         }
@@ -581,38 +553,37 @@ class TestColorToken:
         assert asdict(token.bg_token) == {
             'value': '44',
             'value_name': 'blue',
-            'original_value': '44',
             'colour_type': ColourType.BG,
             'ice_colours': False,
         }
 
     def test_color8_token_generate_tokens_with_reset(self) -> None:
-        token = ColorToken(parts=['0', '37', '40'], split_components=True)
+        token = ColorToken(value='0;37;40')
         expected = {
             'parts': ['0', '37', '40'],
             'value': '0;37;40',
             'ice_colour_mode': False,
-            'sgr_token': {'value': '0', 'value_name': 'Reset', 'original_value': '0'},
             'fg_token': {
                 'value': '37',
                 'value_name': 'white',
-                'original_value': '37',
                 'colour_type': ColourType.FG,
                 'bright': False,
             },
             'bg_token': {
                 'value': '40',
                 'value_name': 'black',
-                'original_value': '40',
                 'colour_type': ColourType.BG,
                 'ice_colours': False,
             },
-            'split_components': True,
+            'sgr_token': {
+                'value': '0',
+                'value_name': 'Reset',
+            },
         }
         assert asdict(token) == expected
 
     def test_color8_token_str(self) -> None:
-        token = ColorToken(parts=['31', '44'], split_components=True)
+        token = ColorToken(value='31;44')
         assert str(token) == '\x1b[31;44m'
 
 
@@ -623,7 +594,6 @@ class TestSGRToken:
         token = SGRToken(value='0')
         expected = {
             'value': '0',
-            'original_value': '0',
             'value_name': 'Reset',
         }
         assert asdict(token) == expected
@@ -633,7 +603,6 @@ class TestSGRToken:
         token = SGRToken(value='1')
         expected = {
             'value': '1',
-            'original_value': '1',
             'value_name': 'Bold',
         }
         assert asdict(token) == expected
