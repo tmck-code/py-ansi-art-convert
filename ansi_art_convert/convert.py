@@ -664,7 +664,7 @@ class Tokeniser:
 
         return UnknownToken(value=''.join(code_chars))
 
-    def tokenise(self) -> Iterator[ANSIToken]:
+    def tokenise(self) -> Iterator[ANSIToken | ColorToken]:
         '''
         Tokenise ANSI escape sequences and text.
         This produces a faithful representation of the tokens in the original data
@@ -681,6 +681,7 @@ class Tokeniser:
         isCode, currCode = False, []
         currText: list[str] = []
         for ch in self.data:
+            # ANSI escape sequence start
             if ch == '\x1b':
                 isCode = True
                 currCode.append(ch)
@@ -688,19 +689,24 @@ class Tokeniser:
                     yield self._textTokenType(value=''.join(currText))
                     currText = []
 
+            # accumulate char for the ANSI code
             elif isCode:
                 currCode.append(ch)
+                # if the char is a letter, it's the end of the ANSI code
                 if ch.isalpha():
                     isCode = False
-                    yield from self.create_tokens(currCode)
+                    yield self.create_token(currCode)
                     currCode = []
+            # if not currently accumulating an ANSI code, accumulate text chars
             else:
                 self.counts[(ch, hex(ord(ch)))] += 1
+                # if it's a newline, yield the current TextToken (if any), then yield a NewLineToken
                 if ch == '\n':
                     if currText:
                         yield self._textTokenType(value=''.join(currText))
                         currText = []
                     yield NewLineToken(value=ch)
+                # if it's a C0 control char, yield the current TextToken (if any), then yield a C0Token
                 elif ch in C0_TOKEN_NAMES:
                     if currText:
                         yield self._textTokenType(value=''.join(currText))
@@ -708,6 +714,7 @@ class Tokeniser:
                     yield C0Token(value=ch)
                 else:
                     currText.append(ch)
+        # yield any remaining buffered text
         if currText:
             yield self._textTokenType(value=''.join(currText))
 
