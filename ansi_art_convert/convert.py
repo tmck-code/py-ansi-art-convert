@@ -63,7 +63,7 @@ def set_glyph_offset(offset: int) -> None:
 
 @dataclass
 class TextToken(ANSIToken):
-    offset: int = field(repr=False, default=-1)
+    offset: int = field(default=-1)
     _offset: ClassVar[int] = 0xE100
 
     def __post_init__(self) -> None:
@@ -71,7 +71,6 @@ class TextToken(ANSIToken):
         # if offset wasn't supplied in constructor, use the class variable
         if self.offset == -1:
             self.offset = self._offset
-        self.value = TextToken._translate_chars(self.value, self.offset)
 
     @staticmethod
     def _translate_chars(s: str, offset: int) -> str:
@@ -82,6 +81,9 @@ class TextToken(ANSIToken):
             else:
                 new_values.append(v)
         return ''.join(new_values)
+
+    def __str__(self) -> str:
+        return self._translate_chars(self.value, self.offset)
 
     def repr(self) -> str:
         return '\n'.join([
@@ -157,7 +159,7 @@ class C0Token(TextToken):
 @dataclass
 class CP437Token(ANSIToken):
     _offset: ClassVar[int] = 0xE100
-    offset: int = field(repr=False, default=-1)
+    offset: int = field(default=-1)
 
     def _translate_char(self, ch: str) -> str:
         n = UNICODE_TO_CP437.get(ord(ch), ord(ch))
@@ -171,7 +173,9 @@ class CP437Token(ANSIToken):
         # if offset wasn't supplied in constructor, use the class variable
         if self.offset == -1:
             self.offset = self._offset
-        self.value = ''.join([self._translate_char(v) for v in self.original_value])
+
+    def __str__(self) -> str:
+        return ''.join(self._translate_char(ch) for ch in self.value)
 
     def repr(self) -> str:
         return '\n'.join([
@@ -594,33 +598,25 @@ class EndOfFile(ANSIToken):
 
 @dataclass
 class Tokeniser:
-    fpath: str
-    sauce: SauceRecordExtended
+    '''
+    The Tokeniser reads a file of ANSI art, and faithfully tokenises
+    - segments of plain text chars (ISO8859-1, CP437, ASCII or UTF-8 encoded)
+    - C0 control chars (e.g. newline, tab, carriage return)
+    - ANSI colour codes (including extended 256 colour and true colour formats)
+    - ANSI cursor movement codes (e.g. CursorForward, CursorPosition)
+    '''
+
     data: str
+    sauce: SauceRecordExtended
     font_name: str = field(default='', repr=False)
     encoding: SupportedEncoding = SupportedEncoding.CP437
     tokens: list[ANSIToken] = field(default_factory=list, init=False)
-    glyph_offset: int = field(default=0)
+    glyph_offset: int = field(default=-1)
     ice_colours: bool = field(default=False)
-    width: int = field(default=0)
     counts: Counter[tuple[str, str]] = field(default_factory=Counter, init=False)
     _textTokenType: type = field(init=False, repr=False, default=TextToken)
 
     def __post_init__(self) -> None:
-        if self.font_name:
-            self.glyph_offset = get_glyph_offset(self.font_name)
-        elif 'name' in self.sauce.font:
-            self.glyph_offset = get_glyph_offset(self.sauce.font['name'])
-            self.font_name = self.sauce.font['name']
-        else:
-            if self.encoding == SupportedEncoding.CP437:
-                self.glyph_offset = get_glyph_offset('IBM VGA')
-
-        set_glyph_offset(self.glyph_offset)
-
-        if not self.width:
-            self.width = int(self.sauce.sauce.tinfo1) or 80
-
         if not self.ice_colours:
             self.ice_colours = self.sauce.non_blink_mode
 
@@ -629,13 +625,9 @@ class Tokeniser:
         else:
             self._textTokenType = TextToken
 
-        print(f'Using extended sauce: {self.sauce!r}')
-        print(f'Width: {self.width}, Glyph offset: {hex(self.glyph_offset)}, Ice colours: {self.ice_colours}')
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name == 'glyph_offset':
-            set_glyph_offset(value)
-        super().__setattr__(name, value)
+        if self.glyph_offset == -1:
+            self.glyph_offset = get_glyph_offset(self.font_name)
+        self._textTokenType.set_offset(self.glyph_offset)
 
     def create_tokens(self, code_chars: list[str]) -> list[ANSIToken]:
         'Create a token from a complete ANSI escape sequence.'
