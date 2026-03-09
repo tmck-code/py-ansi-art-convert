@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 'Unit tests for Renderer class, gen_lines() and render() methods in convert.py'
 
+from dataclasses import asdict
+from itertools import batched
+
 from ansi_art_convert.convert import (
-    Color8BGToken,
-    Color8FGToken,
+    ANSIToken,
+    ColorToken,
+    ColourType,
     ControlToken,
     EOFToken,
     Renderer,
-    SGRToken,
     TextToken,
     set_glyph_offset,
 )
@@ -36,93 +39,95 @@ class TestSplitTextToken:
 
     def setup_method(self) -> None:
         self.offset = 0
-        self.renderer = Renderer(
-            fpath='/test/file.ans',
-            tokeniser=create_tokeniser(),
-        )
+        self.renderer = Renderer(fpath='/test/file.ans', tokeniser=create_tokeniser())
         set_glyph_offset(self.offset)
 
-    def test_split_text_token_exact_fit(self) -> None:
+    def test_split_exact_multiple(self) -> None:
         self.renderer.width = 5
-        # Test splitting text that's exactly 15 chars with 5 char remainder
-        result = list(
-            self.renderer.split_text_token(
-                TextToken(value='HelloWorldAbcde', offset=self.offset),
-                remainder=5,
-            )
-        )
-        s = ''.join(chr(ord(el) + self.offset) for el in 'HelloWorldAbcde')
+        s = 'HelloWorldAbcde'  # string is length 15
+
+        result = list(self.renderer.split_text_token(TextToken(value=s, offset=self.offset)))
+
+        chunks = list(map(''.join, batched(s, 5)))
         expected = [
-            TextToken(value=s[:5], offset=self.offset),
-            TextToken(value=s[5:10], offset=self.offset),
-            TextToken(value=s[10:], offset=self.offset),
+            TextToken(value=chunks[0], offset=self.offset),
+            TextToken(value=chunks[1], offset=self.offset),
+            TextToken(value=chunks[2], offset=self.offset),
         ]
         assert result == expected
 
-    def test_split_text_token_multiple_chunks(self) -> None:
+    def test_split_multiple_chunks(self) -> None:
         self.renderer.width = 5
 
-        result = list(
-            self.renderer.split_text_token(
-                TextToken(value='A' * 25, offset=self.offset),
-                remainder=self.renderer.width,
-            )
-        )
-        expected = [
-            TextToken(value='A' * 5, offset=self.offset),
-        ] * 5
+        token = TextToken(value='A' * 25, offset=self.offset)
+
+        result = list(self.renderer.split_text_token(token))
+        expected = [TextToken(value='A' * 5, offset=self.offset)] * 5
         assert result == expected
 
-    def test_split_text_token_no_split(self) -> None:
+    def test_split_no_split(self) -> None:
         self.renderer.width = 80
 
-        result = list(
-            self.renderer.split_text_token(
-                TextToken(value='Hi', offset=self.offset),
-                remainder=self.renderer.width,
-            )
-        )
-        expected = [
-            TextToken(value='Hi', offset=self.offset),
-        ]
+        token = TextToken(value='Hi', offset=self.offset)
+
+        result = list(self.renderer.split_text_token(token))
+        expected = [token]
+        assert result == expected
+
+    def test_split_exact_width(self) -> None:
+        self.renderer.width = 5
+
+        token = TextToken(value='Hello', offset=self.offset)
+
+        result = list(self.renderer.split_text_token(token))
+        expected = [token]
         assert result == expected
 
 
-class TestGenLines:
-    'Test gen_lines method - core line generation logic'
-
+class TestGrid:
     def setup_method(self) -> None:
         self.offset = 0
         self.renderer = create_renderer('')
         set_glyph_offset(self.offset)
 
-    def test_gen_lines_simple_text(self) -> None:
+    def gather_results(self, grid: list[list[ANSIToken]]) -> list[list[tuple[type, dict]]]:
+        result = []
+        for line in grid:
+            resultLine = []
+            for el in line:
+                resultLine.append((type(el), asdict(el)))
+            result.append(resultLine)
+        return result
+
+    def test_simple_text(self) -> None:
         self.renderer.tokeniser.data = 'Hello'
 
-        result = list(self.renderer.gen_lines())
-        expected = [[TextToken(value='Hello', offset=self.offset)]]
+        result = self.gather_results(list(self.renderer.grid()))
+        expected = [
+            [(TextToken, {'value': 'Hello', 'offset': 0})],
+        ]
         assert result == expected
 
-    def test_gen_lines_text_with_newline(self) -> None:
+    def test_text_with_newline(self) -> None:
         self.renderer.tokeniser.data = 'Hello\nWorld'
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
-            [TextToken(value='Hello', offset=self.offset)],
-            [TextToken(value='World', offset=self.offset)],
+            [(TextToken, {'value': 'Hello', 'offset': 0})],
+            [(TextToken, {'value': 'World', 'offset': 0})],
         ]
         assert result == expected
 
-    def test_gen_lines_text_at_width_boundary(self) -> None:
+    def test_text_at_width_boundary(self) -> None:
         self.renderer.tokeniser.data = 'A' * 80
 
-        lines = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
-            [TextToken(value='A' * 80, offset=self.offset)],
+            [(TextToken, {'value': 'A' * 80, 'offset': 0})],
         ]
-        assert lines == expected
+        assert result == expected
 
-    def test_gen_lines_text_exceeds_width(self) -> None:
+    def test_text_exceeds_width(self) -> None:
         self.renderer.tokeniser.data = 'A' * 100
 
         tokens = list(self.renderer.tokeniser.tokenise())
@@ -131,158 +136,311 @@ class TestGenLines:
         ]
         assert tokens == expected_tokens
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
-            [TextToken(value='A' * 80, offset=self.offset)],
-            [TextToken(value='A' * 20, offset=self.offset)],
+            [(TextToken, {'value': 'A' * 80, 'offset': 0})],
+            [(TextToken, {'value': 'A' * 20, 'offset': 0})],
         ]
 
         assert result == expected
 
-    def test_gen_lines_with_colors(self) -> None:
+    def test_with_colours(self) -> None:
         self.renderer.tokeniser.data = '\x1b[31mRed\x1b[0m'
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
+
         expected = [
             [
-                Color8FGToken(value='31'),
-                Color8BGToken(value='40'),
-                TextToken(value='Red', offset=self.offset),
-                SGRToken(value='0'),
-                Color8FGToken(value='37'),
-                Color8BGToken(value='40'),
+                (
+                    ColorToken,
+                    {
+                        'value': '31',
+                        'ice_colour_mode': False,
+                        'parts': ['31'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '31',
+                            'value_name': 'red',
+                            'bright': False,
+                        },
+                        'bg_token': None,
+                    },
+                ),
+                (TextToken, {'value': 'Red', 'offset': 0}),
+                (
+                    ColorToken,
+                    {
+                        'value': '0',
+                        'ice_colour_mode': False,
+                        'parts': ['0'],
+                        'sgr_token': {'value': '0', 'value_name': 'Reset'},
+                        'fg_token': None,
+                        'bg_token': None,
+                    },
+                ),
             ]
         ]
         assert result == expected
 
-    def test_gen_lines_preserves_colors_across_wraps(self) -> None:
+    def test_preserves_colors_across_wraps(self) -> None:
         # When text wraps, colors should be preserved on the next line
         data = '\x1b[31m' + 'A' * 90 + '\x1b[0m'
         self.renderer.tokeniser.data = data
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
             [
-                Color8FGToken(value='31'),
-                Color8BGToken(value='40'),
-                TextToken(value='A' * 80, offset=self.offset),
+                (
+                    ColorToken,
+                    {
+                        'value': '31',
+                        'ice_colour_mode': False,
+                        'parts': ['31'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '31',
+                            'value_name': 'red',
+                            'bright': False,
+                        },
+                        'bg_token': None,
+                    },
+                ),
+                (TextToken, {'value': 'A' * 80, 'offset': 0}),
             ],
             [
-                Color8FGToken(value='31'),
-                Color8BGToken(value='40'),
-                TextToken(value='A' * 10, offset=self.offset),
-                SGRToken(value='0'),
-                Color8FGToken(value='37'),
-                Color8BGToken(value='40'),
+                (TextToken, {'value': 'A' * 10, 'offset': 0}),
+                (
+                    ColorToken,
+                    {
+                        'value': '0',
+                        'ice_colour_mode': False,
+                        'parts': ['0'],
+                        'sgr_token': {'value': '0', 'value_name': 'Reset'},
+                        'fg_token': None,
+                        'bg_token': None,
+                    },
+                ),
             ],
         ]
         assert result == expected
 
-    def test_gen_lines_color_reset_clears_state(self) -> None:
+    def test_color_reset_clears_state(self) -> None:
         self.renderer.tokeniser.data = '\x1b[31mRed\x1b[0mNormal'
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
             [
-                Color8FGToken(value='31'),
-                Color8BGToken(value='40'),
-                TextToken(value='Red', offset=self.offset),
-                SGRToken(value='0'),
-                Color8FGToken(value='37'),
-                Color8BGToken(value='40'),
-                TextToken(value='Normal', offset=self.offset),
+                (
+                    ColorToken,
+                    {
+                        'value': '31',
+                        'ice_colour_mode': False,
+                        'parts': ['31'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '31',
+                            'value_name': 'red',
+                            'bright': False,
+                        },
+                        'bg_token': None,
+                    },
+                ),
+                (TextToken, {'value': 'Red', 'offset': 0}),
+                (
+                    ColorToken,
+                    {
+                        'value': '0',
+                        'ice_colour_mode': False,
+                        'parts': ['0'],
+                        'sgr_token': {'value': '0', 'value_name': 'Reset'},
+                        'fg_token': None,
+                        'bg_token': None,
+                    },
+                ),
+                (TextToken, {'value': 'Normal', 'offset': 0}),
             ]
         ]
         assert result == expected
 
-    def test_gen_lines_multiple_colors(self) -> None:
+    def test_multiple_colors(self) -> None:
         self.renderer.tokeniser.data = '\x1b[31mRed\x1b[32mGreen\x1b[34mBlue'
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
             [
-                Color8FGToken(value='31'),
-                Color8BGToken(value='40'),
-                TextToken(value='Red', offset=self.offset),
-                Color8FGToken(value='32'),
-                Color8BGToken(value='40'),
-                TextToken(value='Green', offset=self.offset),
-                Color8FGToken(value='34'),
-                Color8BGToken(value='40'),
-                TextToken(value='Blue', offset=self.offset),
+                (
+                    ColorToken,
+                    {
+                        'value': '31',
+                        'ice_colour_mode': False,
+                        'parts': ['31'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '31',
+                            'value_name': 'red',
+                            'bright': False,
+                        },
+                        'bg_token': None,
+                    },
+                ),
+                (TextToken, {'value': 'Red', 'offset': 0}),
+                (
+                    ColorToken,
+                    {
+                        'value': '32',
+                        'ice_colour_mode': False,
+                        'parts': ['32'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '32',
+                            'value_name': 'green',
+                            'bright': False,
+                        },
+                        'bg_token': None,
+                    },
+                ),
+                (TextToken, {'value': 'Green', 'offset': 0}),
+                (
+                    ColorToken,
+                    {
+                        'value': '34',
+                        'ice_colour_mode': False,
+                        'parts': ['34'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '34',
+                            'value_name': 'blue',
+                            'bright': False,
+                        },
+                        'bg_token': None,
+                    },
+                ),
+                (TextToken, {'value': 'Blue', 'offset': 0}),
             ]
         ]
         assert result == expected
 
-    def test_gen_lines_empty_input(self) -> None:
+    def test_empty_input(self) -> None:
         self.renderer.tokeniser.data = ''
 
-        result = list(self.renderer.gen_lines())
+        result = list(self.renderer.grid())
         assert result == []
 
-    def test_gen_lines_control_sequences(self) -> None:
+    def test_control_sequences(self) -> None:
         self.renderer.tokeniser.data = 'Hello\x1b[5CWorld'
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
             [
-                TextToken(value='Hello', offset=self.offset),
-                ControlToken(value='\x1b[5C'),
-                TextToken(value='World', offset=self.offset),
+                (TextToken, {'value': 'Hello', 'offset': 0}),
+                (ControlToken, {'value': '5', 'value_name': 'CursorForward', 'subtype': 'C'}),
+                (TextToken, {'value': 'World', 'offset': 0}),
             ]
         ]
         assert result == expected
 
-    def test_gen_lines_cursor_position_clears_line(self) -> None:
+    def test_cursor_position_clears_line(self) -> None:
         self.renderer.tokeniser.data = 'Hello\x1b[10;20HWorld'
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
             [
-                TextToken(value='Hello', offset=self.offset),
-                ControlToken(value='\x1b[10;20H'),
-                TextToken(value='World', offset=self.offset),
+                (TextToken, {'value': 'Hello', 'offset': 0}),
+                (ControlToken, {'value': '10;20', 'value_name': 'CursorPosition', 'subtype': 'H'}),
+                (TextToken, {'value': 'World', 'offset': 0}),
             ]
         ]
         assert result == expected
 
-    def test_gen_lines_width_20(self) -> None:
+    def test_width_20(self) -> None:
         self.renderer.tokeniser.data = 'HelloWorldThisIsATest'
         self.renderer.width = 20
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
-            [TextToken(value='HelloWorldThisIsATes', offset=self.offset)],
-            [TextToken(value='t', offset=self.offset)],
+            [(TextToken, {'value': 'HelloWorldThisIsATes', 'offset': 0})],
+            [(TextToken, {'value': 't', 'offset': 0})],
         ]
         assert result == expected
 
-    def test_gen_lines_fg_and_bg_colors(self) -> None:
+    def test_fg_and_bg_colors(self) -> None:
         self.renderer.tokeniser.data = '\x1b[31;44mColoredText\x1b[0m'
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
             [
-                Color8FGToken(value='31'),
-                Color8BGToken(value='44'),
-                TextToken(value='ColoredText', offset=self.offset),
-                SGRToken(value='0'),
-                Color8FGToken(value='37'),
-                Color8BGToken(value='40'),
+                (
+                    ColorToken,
+                    {
+                        'value': '31;44',
+                        'ice_colour_mode': False,
+                        'parts': ['31', '44'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '31',
+                            'value_name': 'red',
+                            'bright': False,
+                        },
+                        'bg_token': {
+                            'colour_type': ColourType.BG,
+                            'value': '44',
+                            'value_name': 'blue',
+                            'bright': False,
+                        },
+                    },
+                ),
+                (TextToken, {'value': 'ColoredText', 'offset': 0}),
+                (
+                    ColorToken,
+                    {
+                        'value': '0',
+                        'ice_colour_mode': False,
+                        'parts': ['0'],
+                        'sgr_token': {'value': '0', 'value_name': 'Reset'},
+                        'fg_token': None,
+                        'bg_token': None,
+                    },
+                ),
             ]
         ]
         assert result == expected
 
-    def test_gen_lines_ice_colours(self) -> None:
+    def test_ice_colours(self) -> None:
         self.renderer.tokeniser.data = '\x1b[31;44mText'
         self.renderer.tokeniser.ice_colours = True
 
-        result = list(self.renderer.gen_lines())
+        result = self.gather_results(list(self.renderer.grid()))
         expected = [
             [
-                Color8FGToken(value='31'),
-                Color8BGToken(value='44'),
-                TextToken(value='Text', offset=self.offset),
+                (
+                    ColorToken,
+                    {
+                        'value': '31;44',
+                        'ice_colour_mode': True,
+                        'parts': ['31', '44'],
+                        'sgr_token': None,
+                        'fg_token': {
+                            'colour_type': ColourType.FG,
+                            'value': '31',
+                            'value_name': 'red',
+                            'bright': False,
+                        },
+                        'bg_token': {
+                            'colour_type': ColourType.BG,
+                            'value': '44',
+                            'value_name': 'blue',
+                            'bright': False,
+                        },
+                    },
+                ),
+                (TextToken, {'value': 'Text', 'offset': 0}),
             ]
         ]
         assert result == expected
@@ -592,8 +750,8 @@ class TestGridSaveRestoreCursor:
         set_glyph_offset(self.offset)
 
         self.save, self.restore = '\x1b[s', '\x1b[u'
-        self.save_token = ControlToken(value=self.save)
-        self.restore_token = ControlToken(value=self.restore)
+        self.save_token = ControlToken(value='s')
+        self.restore_token = ControlToken(value='u')
 
     def test_tokenise_save(self) -> None:
         self.renderer.tokeniser.data = f'Hello{self.save} World'

@@ -363,7 +363,7 @@ class TestColor8BGToken:
             'value': '41',
             'value_name': 'red',
             'colour_type': ColourType.BG,
-            'ice_colours': False,
+            'bright': False,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[41m'
@@ -374,25 +374,25 @@ class TestColor8BGToken:
             'value': '44',
             'value_name': 'blue',
             'colour_type': ColourType.BG,
-            'ice_colours': False,
+            'bright': False,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[44m'
 
     def test_color8_bg_ice_colours(self) -> None:
         # With ice_colours=True, background colors get +60
-        token = Color8BGToken(value='41', ice_colours=True)
+        token = Color8BGToken(value='41', bright=True)
         expected = {
             'value': '101',  # 41 + 60 = 101
             'value_name': 'red',  # value_name is set before transformation
             'colour_type': ColourType.BG,
-            'ice_colours': True,
+            'bright': True,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[101m'
 
     def test_color8_bg_bright_ice_colours(self) -> None:
-        token = Color8BGToken(value='101', ice_colours=True)
+        token = Color8BGToken(value='101', bright=True)
         assert token.value == '161'  # 101 + 60 = 161
 
 
@@ -427,7 +427,7 @@ class TestColorToken:
             'fg_token': None,
             'bg_token': {
                 'colour_type': ColourType.BG,
-                'ice_colours': False,
+                'bright': False,
                 'value': '44',
                 'value_name': 'blue',
             },
@@ -451,7 +451,7 @@ class TestColorToken:
                 'value': '44',
                 'value_name': 'blue',
                 'colour_type': ColourType.BG,
-                'ice_colours': False,
+                'bright': False,
             },
         }
 
@@ -507,7 +507,7 @@ class TestColorToken:
             'fg_token': None,
             'bg_token': {
                 'colour_type': ColourType.BG,
-                'ice_colours': True,
+                'bright': True,
                 'value': '104',  # 44 + 60 = 104 (ice colours bright)
                 'value_name': 'blue',
             },
@@ -534,7 +534,7 @@ class TestColorToken:
             'value': '44',
             'value_name': 'blue',
             'colour_type': ColourType.BG,
-            'ice_colours': False,
+            'bright': False,
         }
 
     def test_color8_token_generate_tokens_with_reset(self) -> None:
@@ -553,7 +553,7 @@ class TestColorToken:
                 'value': '40',
                 'value_name': 'black',
                 'colour_type': ColourType.BG,
-                'ice_colours': False,
+                'bright': False,
             },
             'sgr_token': {
                 'value': '0',

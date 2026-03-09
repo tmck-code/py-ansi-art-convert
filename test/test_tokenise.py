@@ -275,7 +275,7 @@ class TestTokeniserTokenise:
             ),
             ColorToken(
                 value='44',
-                bg_token=Color8BGToken(value='44', ice_colours=False),
+                bg_token=Color8BGToken(value='44', bright=False),
             ),
             ColorToken(
                 value='1',

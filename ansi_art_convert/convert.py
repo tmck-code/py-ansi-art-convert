@@ -451,11 +451,11 @@ class Color8FGToken(NamedANSIToken):
 class Color8BGToken(NamedANSIToken):
     value_map = COLOUR_8_BG_VALUES
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
-    ice_colours: bool = field(default=False)
+    bright: bool = field(default=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if self.ice_colours:
+        if self.bright:
             self.value = str(int(self.value) + 60)
 
     def repr(self) -> str:
@@ -463,7 +463,7 @@ class Color8BGToken(NamedANSIToken):
             f'\x1b[94m{self.__class__.__name__:<20}\x1b[0m'
             + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
             + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<12s} {value!r}'.format(title='ice_colours:', value=self.ice_colours)
+            + '{title:<12s} {value!r}'.format(title='bright:', value=self.bright)
         ])
 
     def __str__(self) -> str:
@@ -532,7 +532,7 @@ class ColorToken:
             if param in COLOUR_8_FG_VALUES:
                 self.fg_token = Color8FGToken(value=param, bright=bright_fg)
             elif param in COLOUR_8_BG_VALUES:
-                self.bg_token = Color8BGToken(value=param, ice_colours=bright_bg)
+                self.bg_token = Color8BGToken(value=param, bright=bright_bg)
 
     def __str__(self) -> str:
         return f'\x1b[{self.value}m'
@@ -653,7 +653,7 @@ class Tokeniser:
                 case ['48', '5']:
                     return Color256BGToken(value=parts[2])
                 case _:
-                    return ColorToken(value=';'.join(parts))
+                    return ColorToken(value=';'.join(parts), ice_colour_mode=self.ice_colours)
         elif code_end_char in ANSI_CONTROL_CODES:
             return ControlToken(value=';'.join(parts) + code_end_char)
 
@@ -730,7 +730,12 @@ class Renderer:
         if self.width == -1:
             self.width = self.tokeniser.sauce.sauce.tinfo1 or 80
 
-    def split_text_token(self, t: TextToken | CP437Token, remainder: int) -> Iterator[ANSIToken]:
+    def split_text_token(self, t: TextToken | CP437Token) -> Iterator[ANSIToken]:
+        length = len(t.value)
+        if self._currLength + length <= self.width:
+            yield t
+            return
+        remainder = self.width - self._currLength
         for chunk in [t.value[:remainder]] + list(map(''.join, batched(t.value[remainder:], self.width))):
             yield t.__class__(value=chunk)
 
@@ -743,11 +748,40 @@ class Renderer:
         if self._currBG:
             self._currLine.append(self._currBG)
 
+    def grid(self) -> list[list[ANSIToken]]:
+        '''
+        This is the initial stage of the render, which builds up a 2d grid of all tokens.
+        This stage enforces an initial width constraint by
+        - splitting TextTokens, and
+        - inserting newlines as needed.
+        '''
+        grid = []
+        for t in self.tokeniser.tokenise():
+            if isinstance(t, (TextToken, CP437Token)):
+                for chunk in self.split_text_token(t):
+                    self._currLength += len(chunk.value)
+                    self._currLine.append(chunk)
+
+                    if self._currLength >= self.width:
+                        grid.append(self._currLine)
+                        self._currLine, self._currLength = [], 0
+                        self._add_current_colors()
+
+            elif isinstance(t, NewLineToken):
+                grid.append(self._currLine)
+                self._currLine, self._currLength = [], 0
+                self._add_current_colors()
+            else:
+                self._currLine.append(t)
+
+        if self._currLine:
+            grid.append(self._currLine)
+        return grid
+
     def arrange(self) -> Iterator[list[ANSIToken]]:
         '''
-        This stage handles all the "position" related tokens by building up a 2d grid of all tokens,
+        This stage handles all the "position" related tokens by
         and then applying any position-related token operations to rearrange the grid.
-        Additionally, this stage enforces the width constraint by splitting TextTokens as needed, and inserting newlines as needed.
         e.g.
         - CursorUp/CursorForward/etc control tokens
             - Convert CursorForward control tokens into spaces
