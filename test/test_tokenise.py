@@ -47,37 +47,60 @@ class TestGetGlyphOffset:
 class TestTokeniserInit:
     'Test Tokeniser initialization'
 
-    def test_tokeniser_sauce_width(self) -> None:
-        sauce = create_mock_sauce(sauce_record_kwargs={'tinfo1': 67})
-        tokeniser = Tokeniser(
-            fpath='/test/file.ans',
-            sauce=sauce,
-            data='Hello',
-            font_name='IBM VGA',
-        )
-        assert tokeniser.width == sauce.sauce.tinfo1
-
-    def test_tokeniser_custom_width(self) -> None:
-        sauce = create_mock_sauce(sauce_record_kwargs={'tinfo1': 40})
-        tokeniser = Tokeniser(
-            fpath='/test/file.ans',
-            sauce=sauce,
-            data='Hello',
-            font_name='IBM VGA',
-            width=100,
-        )
-        assert tokeniser.width == 100  # Explicit width overrides sauce
-
     def test_tokeniser_ice_colours(self) -> None:
         sauce = create_mock_sauce(extended_kwargs={'non_blink_mode': True})
 
         tokeniser = Tokeniser(
-            fpath='/test/file.ans',
             sauce=sauce,
             data='Hello',
             font_name='IBM VGA',
         )
         assert tokeniser.ice_colours is True
+
+    def test_tokeniser_glyph_offset(self) -> None:
+        tokeniser = Tokeniser(
+            sauce=create_mock_sauce(),
+            data='Hello',
+            font_name='IBM VGA',
+        )
+        expected_offset = 0xE800
+        assert tokeniser.glyph_offset == expected_offset
+
+    def test_tokeniser_glyph_offset_override(self) -> None:
+        tokeniser = Tokeniser(
+            sauce=create_mock_sauce(),
+            data='Hello',
+            font_name='IBM VGA',
+            glyph_offset=0xE200,
+        )
+        assert tokeniser._textTokenType._offset == 0xE200
+
+    def test_tokeniser_text_token_type_cp437(self) -> None:
+        tokeniser = Tokeniser(
+            sauce=create_mock_sauce(),
+            data='Hello',
+            font_name='IBM VGA',
+            encoding=SupportedEncoding.CP437,
+        )
+        assert tokeniser._textTokenType == CP437Token
+
+    def test_tokeniser_text_token_type_utf8(self) -> None:
+        tokeniser_utf8 = Tokeniser(
+            sauce=create_mock_sauce(),
+            data='Hello',
+            font_name='IBM VGA',
+            encoding=SupportedEncoding.UTF_8,
+        )
+        assert tokeniser_utf8._textTokenType == TextToken
+
+    def test_tokeniser_text_token_type_iso8859_1(self) -> None:
+        tokeniser_iso = Tokeniser(
+            sauce=create_mock_sauce(),
+            data='Hello',
+            font_name='IBM VGA',
+            encoding=SupportedEncoding.ISO_8859_1,
+        )
+        assert tokeniser_iso._textTokenType == TextToken
 
 
 class TestTokeniserColourTokens:
@@ -86,76 +109,60 @@ class TestTokeniserColourTokens:
     def setup_class(self) -> None:
         self.sauce = create_mock_sauce()
         self.tokeniser = Tokeniser(
-            fpath='/test/file.ans',
             sauce=self.sauce,
             data='',
             font_name='IBM VGA',
         )
 
     def test_create_color_token(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b', '[', '31', 'm'])
-        expected = [
-            ColorToken(
-                parts=['31'],
-                sgr_token=None,
-                fg_token=Color8FGToken(value='31', bright=False),
-                bg_token=None,
-                split_components=True,
-            )
-        ]
-        assert result[0].value == expected[0].value
-        assert asdict(result[0]) == asdict(expected[0])
+        result = self.tokeniser.create_token(['\x1b', '[', '31', 'm'])
+        expected = ColorToken(
+            parts=['31'],
+            sgr_token=None,
+            fg_token=Color8FGToken(value='31', bright=False),
+            bg_token=None,
+            split_components=True,
+        )
+        assert result.value == expected.value
+        assert asdict(result) == asdict(expected)
 
     def test_create_color_token_multiple_params(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b', '[', '1', ';', '31', 'm'])
-        expected = [
-            ColorToken(
-                parts=['1', '31'],
-                sgr_token=SGRToken(value='1'),
-                fg_token=Color8FGToken(value='31', bright=True),
-                bg_token=None,
-                split_components=True,
-            )
-        ]
-        assert result[0].value == expected[0].value
-        assert asdict(result[0]) == asdict(expected[0])
+        result = self.tokeniser.create_token(['\x1b', '[', '1', ';', '31', 'm'])
+        expected = ColorToken(
+            parts=['1', '31'],
+            sgr_token=SGRToken(value='1'),
+            fg_token=Color8FGToken(value='31', bright=True),
+            bg_token=None,
+            split_components=True,
+        )
+
+        assert result.value == expected.value
+        assert asdict(result) == asdict(expected)
 
     def test_create_true_color_fg_token(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b', '[', '1', ';', '255', ';', '128', ';', '64', 't'])
-        expected = [
-            TrueColorFGToken(
-                value='255;128;64',
-            )
-        ]
+        result = self.tokeniser.create_token(['\x1b', '[', '1', ';', '255', ';', '128', ';', '64', 't'])
+        expected = TrueColorFGToken(
+            value='255;128;64',
+        )
         assert result == expected
 
     def test_create_true_color_bg_token(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b', '[', '0', ';', '0', ';', '255', ';', '128', 't'])
-        expected = [
-            TrueColorBGToken(
-                value='0;255;128',
-            )
-        ]
+        result = self.tokeniser.create_token(['\x1b', '[', '0', ';', '0', ';', '255', ';', '128', 't'])
+        expected = TrueColorBGToken(
+            value='0;255;128',
+        )
         assert result == expected
 
 
 class TestTokeniseUnknown(TokeniserTest):
     def test_create_unknown_token(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b[999Z'])
-        expected = [
-            UnknownToken(
-                value='\x1b[999Z',
-            )
-        ]
+        result = self.tokeniser.create_token(['\x1b[999Z'])
+        expected = UnknownToken(value='\x1b[999Z')
         assert result == expected
 
     def test_create_token_too_short(self) -> None:
-        result = self.tokeniser.create_tokens(['\x1b'])
-        expected = [
-            UnknownToken(
-                value='\x1b',
-            )
-        ]
+        result = self.tokeniser.create_token(['\x1b'])
+        expected = UnknownToken(value='\x1b')
         assert result == expected
 
 
