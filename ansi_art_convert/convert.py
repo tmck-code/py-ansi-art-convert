@@ -745,19 +745,21 @@ class Renderer:
 
     def arrange(self) -> Iterator[list[ANSIToken]]:
         '''
-        This stage handles all the "position" related tokens, e.g.
+        This stage handles all the "position" related tokens by building up a 2d grid of all tokens,
+        and then applying any position-related token operations to rearrange the grid.
+        Additionally, this stage enforces the width constraint by splitting TextTokens as needed, and inserting newlines as needed.
+        e.g.
         - CursorUp/CursorForward/etc control tokens
+            - Convert CursorForward control tokens into spaces
         - SaveCursorPosition/RestoreCursorPosition control tokens
         - Arranges the token stream into lines based on newlines and width
         '''
-        return ...
+        return
 
     def translate(self) -> Iterator[list[ANSIToken]]:
         '''
         This performs final translations on the arranged tokens, e.g.
         - Convert Text/CP437 chars into their final Unicode chars based on the font offset
-        - Convert CursorForward control tokens into spaces
-        - Convert CursorPosition control tokens into newlines
         - Ensure that each line ends with a reset SGR token
           - and that the next line resumes the same colours (if they were set)
         - Converts/updates colour tokens as needed.
@@ -766,16 +768,15 @@ class Renderer:
           - for backgrounds, if ice_colours is set, and the SGR code is 1 (bold)
 
         '''
-        return ...
+        return
 
     def render(self) -> str:
         '''
-        Render an arranged grid of tokens to a string.
+        Render an arranged & translated grid of tokens to a string.
         Each line gets a reset sequence at the end.
 
         '''
-
-        pass
+        return
 
 
 def parse_args() -> dict[str, Any]:
