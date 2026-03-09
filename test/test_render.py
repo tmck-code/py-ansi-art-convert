@@ -27,7 +27,6 @@ class TestRenderer:
         assert renderer.width == 80
 
     def test_renderer_custom_width(self) -> None:
-        self.tokeniser.width = 40
         renderer = Renderer(fpath='/test/file.ans', tokeniser=self.tokeniser)
         assert renderer.width == 40
 
@@ -496,7 +495,6 @@ class TestRender:
 
         self.renderer.tokeniser.data = data
         self.renderer.width = 40
-        self.renderer.tokeniser.width = 40
 
         result = list(self.renderer.iter_lines())
         expected = [
@@ -524,7 +522,6 @@ class TestRendererEdgeCases:
 
     def test_width_1(self) -> None:
         self.renderer.tokeniser.data = 'ABC'
-        self.renderer.tokeniser.width = 1
         self.renderer.width = 1
 
         result = self.renderer.render()
@@ -541,7 +538,6 @@ class TestRendererEdgeCases:
     def test_multiple_splits(self) -> None:
         data = 'X' * 22
         self.renderer.tokeniser.data = data
-        self.renderer.tokeniser.width = 5
         self.renderer.width = 5
 
         result = self.renderer.render()
@@ -672,7 +668,6 @@ class TestGridSaveRestoreCursor:
             f'{self.restore}XXXXXXX\n',
         ])
         self.renderer.tokeniser.data = data
-        self.renderer.tokeniser.width = 20
 
         result = self.renderer.grid()
         expected = [
@@ -710,7 +705,6 @@ class TestArrangeGrid:
             f'{self.restore}XXXXXXX\n',
         ])
         self.renderer.tokeniser.data = data
-        self.renderer.tokeniser.width = 20
 
         grid = list(self.renderer.grid())
         result = list(self.renderer.arrange_grid(grid))
@@ -741,7 +735,6 @@ class TestRenderGrid:
             f'{self.restore}XXXXXXX\n',
         ])
         self.renderer.tokeniser.data = data
-        self.renderer.tokeniser.width = 20
 
         result = self.renderer.render()
         expected = 'AAAA▓▒░XXXXXXX\x1b[0m\n'
@@ -753,7 +746,6 @@ class TestRenderGrid:
             f'{self.restore}▓▒░▒▓{self.save}\r',  # also 5 chars
         ])
         self.renderer.tokeniser.data = data
-        self.renderer.tokeniser.width = 6  # width should be 6 chars max
         self.renderer.width = 6
 
         result = self.renderer.render()

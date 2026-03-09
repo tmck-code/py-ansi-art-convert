@@ -54,9 +54,7 @@ def create_mock_sauce(
 DEFAULT_TOKENISER_KWARGS: dict[str, Any] = {
     'font_name': DEFAULT_FONT_NAME,
     'encoding': DEFAULT_ENCODING,
-    'width': DEFAULT_WIDTH,
     'ice_colours': False,
-    'fpath': '/test/file.ans',
 }
 
 

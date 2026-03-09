@@ -30,7 +30,6 @@ class TokeniserTest:
     def setup_class(self) -> None:
         self.sauce = create_mock_sauce()
         self.tokeniser = Tokeniser(
-            fpath='/test/file.ans',
             sauce=self.sauce,
             data='',
             font_name='IBM VGA',
@@ -166,7 +165,6 @@ class TestTokeniserTokenise:
     def setup_class(self) -> None:
         self.sauce = create_mock_sauce()
         self.tokeniser = Tokeniser(
-            fpath='/test/file.ans',
             sauce=self.sauce,
             data='',
             font_name='IBM VGA',
@@ -312,7 +310,6 @@ class TestTokeniserTokenise:
 
     def test_tokenise_utf8_encoding(self) -> None:
         tokeniser = Tokeniser(
-            fpath='/test/file.ans',
             sauce=create_mock_sauce(),
             data='Hello ♥ World',
             font_name='IBM VGA',
@@ -378,7 +375,6 @@ class TestSaveRestoreCursor:
     def setup_method(self) -> None:
         self.sauce = create_mock_sauce()
         self.tokeniser = Tokeniser(
-            fpath='/test/file.ans',
             sauce=self.sauce,
             data='',
             font_name='IBM VGA',
