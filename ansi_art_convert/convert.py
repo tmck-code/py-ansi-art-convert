@@ -629,10 +629,20 @@ class Tokeniser:
             self.glyph_offset = get_glyph_offset(self.font_name)
         self._textTokenType.set_offset(self.glyph_offset)
 
-    def create_tokens(self, code_chars: list[str]) -> list[ANSIToken]:
-        'Create a token from a complete ANSI escape sequence.'
+    def create_token(self, code_chars: list[str]) -> ANSIToken | ColorToken:
+        '''
+        Create a token from a complete ANSI escape sequence.
+        i.e. any token that starts with \x1b and ends with a letter.
+        - Colour codes
+          - 8 colour SGR codes (e.g. \x1b[1;31m)
+          - 256 colour SGR codes (e.g. \x1b[38;5;196m)
+          - True colour SGR codes, e.g.
+            - FG: \x1b[38;2;255;0;0m or \x1b[0;255;0;0t
+            - BG: \x1b[48;2;255;0;0m or \x1b[1;255;0;0t
+        - Control (cursor movement) codes (e.g. \x1b[10C, \x1b[5B, \x1b[2;3H)
+        '''
         if len(code_chars) < 3:
-            return [UnknownToken(value=''.join(code_chars))]
+            return UnknownToken(value=''.join(code_chars))
 
         # Handle custom true color format: \x1b[0;R;G;Bt (FG) or \x1b[1;R;G;Bt (BG)
         if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 't':
@@ -641,19 +651,18 @@ class Tokeniser:
                 mode, r, g, b = params
                 rgb_value = f'{int(r)};{int(g)};{int(b)}'
                 if mode == '0':
-                    return [TrueColorBGToken(value=rgb_value)]
+                    return TrueColorBGToken(value=rgb_value)
                 elif mode == '1':
-                    return [TrueColorFGToken(value=rgb_value)]
+                    return TrueColorFGToken(value=rgb_value)
 
         if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 'm':
             params = ''.join(code_chars[2:-1]).split(';')
-            return [ColorToken(parts=params, split_components=True)]
+            return ColorToken(parts=params, split_components=True)
 
         elif code_chars[-1] in ANSI_CONTROL_CODES:
-            t = ControlToken(value=''.join(code_chars))
-            return [t]
+            return ControlToken(value=''.join(code_chars))
 
-        return [UnknownToken(value=''.join(code_chars))]
+        return UnknownToken(value=''.join(code_chars))
 
     def tokenise(self) -> Iterator[ANSIToken]:
         '''
