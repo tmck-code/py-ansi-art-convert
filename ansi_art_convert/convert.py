@@ -723,20 +723,19 @@ class Tokeniser:
 class Renderer:
     fpath: str
     tokeniser: Tokeniser = field(repr=False)
+    width: int = field(default=-1)
     _currLine: List[ANSIToken] = field(default_factory=list, repr=False)
     _currLength: int = field(default=0, repr=False)
     _currFG: Color8FGToken | None = field(default=None, repr=False)
     _currBG: Color8BGToken | None = field(default=None, repr=False)
     _currSGR: ANSIToken | None = field(default=None, repr=False)
-    width: int = field(default=-1)
 
     def __post_init__(self) -> None:
         if self.width == -1:
             self.width = self.tokeniser.sauce.sauce.tinfo1 or 80
 
     def split_text_token(self, t: TextToken | CP437Token, remainder: int) -> Iterator[ANSIToken]:
-        s = str(t)
-        for chunk in [s[:remainder]] + list(map(''.join, batched(s[remainder:], self.width))):
+        for chunk in [t.value[:remainder]] + list(map(''.join, batched(t.value[remainder:], self.width))):
             yield t.__class__(value=chunk)
 
     def _add_current_colors(self) -> None:

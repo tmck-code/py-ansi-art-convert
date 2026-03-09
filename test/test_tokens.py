@@ -65,21 +65,23 @@ class TestTextToken:
         token = TextToken(value='A', offset=offset)
         expected = {
             'offset': offset,
-            'value': chr(ord('A') + offset),
+            'value': 'A',
             'original_value': 'A',
             'value_name': '',
         }
         assert asdict(token) == expected
+        assert str(token) == chr(ord('A') + offset)
 
     def test_text_token_multiple_chars(self) -> None:
         token = TextToken(value='ABC', offset=0xE100)
         expected = {
             'offset': 0xE100,
-            'value': ''.join(chr(ord(c) + 0xE100) for c in 'ABC'),
+            'value': 'ABC',
             'original_value': 'ABC',
             'value_name': '',
         }
         assert asdict(token) == expected
+        assert str(token) == ''.join(chr(ord(c) + 0xE100) for c in 'ABC')
 
     def test_text_token_high_unicode_preserved(self) -> None:
         # Characters > 255 should not be offset
@@ -96,11 +98,12 @@ class TestTextToken:
         token = TextToken(value='A♥B', offset=0xE100)
         expected = {
             'offset': 0xE100,
-            'value': chr(ord('A') + 0xE100) + '♥' + chr(ord('B') + 0xE100),
+            'value': 'A♥B',
             'original_value': 'A♥B',
             'value_name': '',
         }
         assert asdict(token) == expected
+        assert str(token) == chr(ord('A') + 0xE100) + '♥' + chr(ord('B') + 0xE100)
 
     def test_text_token_zero_offset(self) -> None:
         token = TextToken(value='ABC', offset=0)
@@ -154,7 +157,7 @@ class TestCP437Token:
 
     def test_cp437_basic_ascii(self) -> None:
         token = CP437Token(value='A', offset=0xE100)
-        assert ord(token.value[0]) == ord('A') + 0xE100
+        assert ord(str(token)) == ord('A') + 0xE100
 
     def test_cp437_special_char(self) -> None:
         token = CP437Token(value='☺', offset=0xE100)
@@ -169,7 +172,7 @@ class TestCP437Token:
     def test_cp437_multiple_chars(self) -> None:
         token = CP437Token(value='ABC', offset=0xE100)
         expected = ''.join(chr(0xE100 + ord(c)) for c in 'ABC')
-        assert token.value == expected
+        assert str(token) == expected
 
 
 class TestControlToken:

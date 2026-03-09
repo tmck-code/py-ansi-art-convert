@@ -38,7 +38,7 @@ class TestSplitTextToken:
         self.offset = 0
         self.renderer = Renderer(
             fpath='/test/file.ans',
-            tokeniser=create_tokeniser(tokeniser_kwargs={'fpath': ''}),
+            tokeniser=create_tokeniser(),
         )
         set_glyph_offset(self.offset)
 
