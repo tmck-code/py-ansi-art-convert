@@ -27,6 +27,20 @@ class Token(Protocol):
 @dataclass
 class ANSIToken(Token):
     value: str
+
+    def repr(self) -> str:
+        return '\n'.join([
+            f'\x1b[37m{self.__class__.__name__:<20}\x1b[0m'
+            + '  {title:<s} {value!r:<4}'.format(title='value:', value=self.value)
+            + '  {title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
+        ])
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass
+class NamedANSIToken(ANSIToken):
     value_name: str = field(init=False)
     value_map: ClassVar[dict[str, str]] = field(repr=False, default={})
 
@@ -65,7 +79,6 @@ class TextToken(ANSIToken):
     _offset: ClassVar[int] = 0xE100
 
     def __post_init__(self) -> None:
-        super().__post_init__()
         # if offset wasn't supplied in constructor, use the class variable
         if self.offset == -1:
             self.offset = self._offset
@@ -134,22 +147,8 @@ C0_TOKEN_NAMES = {
 
 
 @dataclass
-class C0Token(TextToken):
+class C0Token(NamedANSIToken):
     value_map = C0_TOKEN_NAMES
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self.value_name = self.value_map.get(self.value, '')
-        if self.value_name == 'CR':
-            self.value = ''
-
-    def repr(self) -> str:
-        return '\n'.join([
-            f'\x1b[33m{self.__class__.__name__:<20}\x1b[0m'
-            + '{title:<s} {value!r:<6}'.format(title='value:', value=self.value)
-            + '{title:<10s} {value!r:<8}'.format(title='value_name:', value=self.value_name)
-            + '{title:<4s} {value!r}'.format(title='len:', value=len(self.value))
-        ])
 
 
 @dataclass
@@ -165,7 +164,6 @@ class CP437Token(ANSIToken):
             return ch
 
     def __post_init__(self) -> None:
-        super().__post_init__()
         # if offset wasn't supplied in constructor, use the class variable
         if self.offset == -1:
             self.offset = self._offset
@@ -207,14 +205,14 @@ ANSI_CONTROL_CODES = {
 
 
 @dataclass
-class ControlToken(ANSIToken):
+class ControlToken(NamedANSIToken):
     subtype: str = field(init=False)
     value_map = ANSI_CONTROL_CODES
 
     def __post_init__(self) -> None:
         self.subtype = self.value[-1]
         self.value_name = self.value_map.get(self.subtype, '')
-        self.value = self.value[2:]
+        self.value = self.value[:-1]
 
     def repr(self) -> str:
         lines = (
@@ -228,7 +226,7 @@ class ControlToken(ANSIToken):
 
     def __str__(self) -> str:
         if self.subtype == 'C':
-            return ' ' * int(self.value[:-1] or '1')
+            return ' ' * int(self.value or '1')
         elif self.subtype == 'H':
             return '\n'
         else:
@@ -242,7 +240,7 @@ class ColourType(Enum):
 
 @dataclass
 class TrueColorFGToken(ANSIToken):
-    colour_type: ColourType = field(repr=False, default=ColourType.FG)
+    colour_type: ClassVar[ColourType] = ColourType.FG
 
     def __str__(self) -> str:
         r, g, b = self.value.split(';')
@@ -258,7 +256,7 @@ class TrueColorFGToken(ANSIToken):
 
 @dataclass
 class TrueColorBGToken(ANSIToken):
-    colour_type: ColourType = field(repr=False, default=ColourType.BG)
+    colour_type: ClassVar[ColourType] = ColourType.BG
 
     def __str__(self) -> str:
         r, g, b = self.value.split(';')
@@ -274,7 +272,7 @@ class TrueColorBGToken(ANSIToken):
 
 @dataclass
 class Color256FGToken(ANSIToken):
-    colour_type: ColourType = field(repr=False, default=ColourType.FG)
+    colour_type: ClassVar[ColourType] = ColourType.FG
 
     def __str__(self) -> str:
         n = self.value
@@ -426,7 +424,7 @@ COLOUR_8_VALUES = COLOUR_8_FG_VALUES | COLOUR_8_BG_VALUES
 
 
 @dataclass
-class Color8FGToken(ANSIToken):
+class Color8FGToken(NamedANSIToken):
     value_map = COLOUR_8_FG_VALUES
     colour_type: ColourType = field(repr=False, default=ColourType.FG)
     bright: bool = False
@@ -450,7 +448,7 @@ class Color8FGToken(ANSIToken):
 
 
 @dataclass
-class Color8BGToken(ANSIToken):
+class Color8BGToken(NamedANSIToken):
     value_map = COLOUR_8_BG_VALUES
     colour_type: ColourType = field(repr=False, default=ColourType.BG)
     ice_colours: bool = field(default=False)
@@ -487,7 +485,7 @@ SGR_CODES = {
 
 
 @dataclass
-class SGRToken(ANSIToken):
+class SGRToken(NamedANSIToken):
     value_map = SGR_CODES
 
     def __str__(self) -> str:
@@ -505,18 +503,16 @@ class SGRToken(ANSIToken):
 class ColorToken:
     'A color token that preserves the original escape sequence without manipulation.'
 
-    parts: list[str] = field(default_factory=list, repr=False)
-    value: str = field(init=False)
-    ice_colour_mode: bool = field(repr=False, default=False)
+    value: str
+    ice_colour_mode: bool = field(default=False)
+    parts: list[str] = field(init=False)
     sgr_token: SGRToken | None = field(default=None)
     fg_token: Color8FGToken | None = field(default=None)
     bg_token: Color8BGToken | None = field(default=None)
-    split_components: bool = field(default=False, repr=False)
 
     def __post_init__(self) -> None:
-        if self.split_components:
-            self.split()
-        self.value = ';'.join(self.parts)
+        self.parts = self.value.split(';')
+        self.split()
 
     def split(self) -> None:
         sgr_code = None
@@ -617,9 +613,9 @@ class Tokeniser:
 
         if self.glyph_offset == -1:
             self.glyph_offset = get_glyph_offset(self.font_name)
-        self._textTokenType.set_offset(self.glyph_offset)
+        set_glyph_offset(self.glyph_offset)
 
-    def create_token(self, code_chars: list[str]) -> ANSIToken | ColorToken:
+    def create_token(self, code: str, code_end_char: str) -> ANSIToken | ColorToken:
         '''
         Create a token from a complete ANSI escape sequence.
         i.e. any token that starts with \x1b and ends with a letter.
@@ -631,28 +627,37 @@ class Tokeniser:
             - BG: \x1b[48;2;255;0;0m or \x1b[1;255;0;0t
         - Control (cursor movement) codes (e.g. \x1b[10C, \x1b[5B, \x1b[2;3H)
         '''
-        if len(code_chars) < 3:
-            return UnknownToken(value=''.join(code_chars))
+        print(f'parsing {code=}, {code_end_char=}')
+
+        if not code.startswith('\x1b') or not code_end_char.isalpha():
+            return UnknownToken(value=code)
+
+        parts = code.removeprefix('\x1b[').split(';')
+        print(f'parts: {parts=}')
 
         # Handle custom true color format: \x1b[0;R;G;Bt (FG) or \x1b[1;R;G;Bt (BG)
-        if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 't':
-            params = ''.join(code_chars[2:-1]).split(';')
-            if len(params) == 4 and params[0] in ['0', '1']:
-                mode, r, g, b = params
-                rgb_value = f'{int(r)};{int(g)};{int(b)}'
-                if mode == '0':
-                    return TrueColorBGToken(value=rgb_value)
-                elif mode == '1':
-                    return TrueColorFGToken(value=rgb_value)
+        if code_end_char == 't':
+            match parts[0]:
+                case '0':
+                    return TrueColorBGToken(value=';'.join(parts))
+                case '1':
+                    return TrueColorFGToken(value=';'.join(parts))
+                case _:
+                    return UnknownToken(value=code)
+        # - handle 256 colour format: \x1b[38;5;{n}m (FG) or \x1b[48;5;{n}m (BG)
+        # - handle 8 colour format: \x1b[{params}m, e.g. \x1b[1;31m
+        elif code_end_char == 'm':
+            match parts[0:2]:
+                case ['38', '5']:
+                    return Color256FGToken(value=parts[2])
+                case ['48', '5']:
+                    return Color256BGToken(value=parts[2])
+                case _:
+                    return ColorToken(value=';'.join(parts))
+        elif code_end_char in ANSI_CONTROL_CODES:
+            return ControlToken(value=';'.join(parts) + code_end_char)
 
-        if code_chars[0:2] == ['\x1b', '['] and code_chars[-1] == 'm':
-            params = ''.join(code_chars[2:-1]).split(';')
-            return ColorToken(parts=params, split_components=True)
-
-        elif code_chars[-1] in ANSI_CONTROL_CODES:
-            return ControlToken(value=''.join(code_chars))
-
-        return UnknownToken(value=''.join(code_chars))
+        return UnknownToken(value=code)
 
     def tokenise(self) -> Iterator[ANSIToken | ColorToken]:
         '''
@@ -681,12 +686,13 @@ class Tokeniser:
 
             # accumulate char for the ANSI code
             elif isCode:
-                currCode.append(ch)
                 # if the char is a letter, it's the end of the ANSI code
                 if ch.isalpha():
                     isCode = False
-                    yield self.create_token(currCode)
+                    yield self.create_token(''.join(currCode), ch)
                     currCode = []
+                else:
+                    currCode.append(ch)
             # if not currently accumulating an ANSI code, accumulate text chars
             else:
                 self.counts[(ch, hex(ord(ch)))] += 1

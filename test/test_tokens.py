@@ -15,6 +15,7 @@ from ansi_art_convert.convert import (
     ControlToken,
     CP437Token,
     EOFToken,
+    NamedANSIToken,
     NewLineToken,
     SGRToken,
     TextToken,
@@ -22,7 +23,6 @@ from ansi_art_convert.convert import (
     TrueColorFGToken,
     UnknownToken,
 )
-from ansi_art_convert.font_data import FONT_OFFSETS
 
 
 class TestANSIToken:
@@ -32,14 +32,13 @@ class TestANSIToken:
         token = ANSIToken(value='test')
         expected = {
             'value': 'test',
-            'value_name': '',
         }
 
         assert asdict(token) == expected
 
     def test_token_with_value_map(self) -> None:
         @dataclass
-        class MyToken(ANSIToken):
+        class MyToken(NamedANSIToken):
             value_map = {'A': 'Letter A'}
 
         token = MyToken(value='A')
@@ -64,7 +63,6 @@ class TestTextToken:
         expected = {
             'offset': offset,
             'value': 'A',
-            'value_name': '',
         }
         assert asdict(token) == expected
         assert str(token) == chr(ord('A') + offset)
@@ -74,7 +72,6 @@ class TestTextToken:
         expected = {
             'offset': 0xE100,
             'value': 'ABC',
-            'value_name': '',
         }
         assert asdict(token) == expected
         assert str(token) == ''.join(chr(ord(c) + 0xE100) for c in 'ABC')
@@ -85,7 +82,6 @@ class TestTextToken:
         expected = {
             'offset': 0xE100,
             'value': '♥',
-            'value_name': '',
         }
         assert asdict(token) == expected
 
@@ -94,7 +90,6 @@ class TestTextToken:
         expected = {
             'offset': 0xE100,
             'value': 'A♥B',
-            'value_name': '',
         }
         assert asdict(token) == expected
         assert str(token) == chr(ord('A') + 0xE100) + '♥' + chr(ord('B') + 0xE100)
@@ -104,7 +99,6 @@ class TestTextToken:
         expected = {
             'offset': 0,
             'value': 'ABC',
-            'value_name': '',
         }
         assert asdict(token) == expected
 
@@ -113,35 +107,29 @@ class TestC0Token:
     'Test C0 control character tokens'
 
     def test_c0_token_cr(self) -> None:
-        for offset in FONT_OFFSETS.values():
-            token = C0Token(value='\r', offset=offset)
-            expected = {
-                'value': '',
-                'value_name': 'CR',
-                'offset': offset,
-            }
-            assert asdict(token) == expected
+        token = C0Token(value='\r')
+        expected = {
+            'value': '\r',
+            'value_name': 'CR',
+        }
+        assert asdict(token) == expected
 
     def test_c0_token_lf(self) -> None:
-        for offset in FONT_OFFSETS.values():
-            token = C0Token(value='\n', offset=offset)
-            assert token.value_name == 'LF'
-            assert len(token.value) > 0
+        token = C0Token(value='\n')
+        assert token.value_name == 'LF'
+        assert len(token.value) > 0
 
     def test_c0_token_tab(self) -> None:
-        for offset in FONT_OFFSETS.values():
-            token = C0Token(value='\t', offset=offset)
+        token = C0Token(value='\t')
         assert token.value_name == 'HT'
 
     def test_c0_token_bell(self) -> None:
-        for offset in FONT_OFFSETS.values():
-            token = C0Token(value='\x07', offset=offset)
-            assert token.value_name == 'BEL'
+        token = C0Token(value='\x07')
+        assert token.value_name == 'BEL'
 
     def test_c0_token_backspace(self) -> None:
-        for offset in FONT_OFFSETS.values():
-            token = C0Token(value='\x08', offset=offset)
-            assert token.value_name == 'BS'
+        token = C0Token(value='\x08')
+        assert token.value_name == 'BS'
 
 
 class TestCP437Token:
@@ -155,7 +143,6 @@ class TestCP437Token:
         token = CP437Token(value='☺', offset=0xE100)
         expected = {
             'value': '☺',  # '☺' is CP437 code 1
-            'value_name': '',
             'offset': 0xE100,
         }
         assert asdict(token) == expected
@@ -172,9 +159,9 @@ class TestControlToken:
 
 class TestControlTokenCursorUp:
     def test_cursor_up(self) -> None:
-        token = ControlToken(value='\x1b[A')
+        token = ControlToken(value='A')
         expected = {
-            'value': 'A',
+            'value': '',
             'value_name': 'CursorUp',
             'subtype': 'A',
         }
@@ -183,18 +170,18 @@ class TestControlTokenCursorUp:
 
 class TestControlTokenCursorDown:
     def test_cursor_down(self) -> None:
-        token = ControlToken(value='\x1b[5B')
+        token = ControlToken(value='5B')
         expected = {
-            'value': '5B',
+            'value': '5',
             'value_name': 'CursorDown',
             'subtype': 'B',
         }
         assert asdict(token) == expected
 
     def test_cursor_forward_1_space_default(self) -> None:
-        token = ControlToken(value='\x1b[C')
+        token = ControlToken(value='C')
         expected = {
-            'value': 'C',
+            'value': '',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -202,9 +189,9 @@ class TestControlTokenCursorDown:
         assert str(token) == ' '
 
     def test_cursor_forward_1_space(self) -> None:
-        token = ControlToken(value='\x1b[1C')
+        token = ControlToken(value='1C')
         expected = {
-            'value': '1C',
+            'value': '1',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -212,9 +199,9 @@ class TestControlTokenCursorDown:
         assert str(token) == ' ' * 1
 
     def test_cursor_forward_10_spaces(self) -> None:
-        token = ControlToken(value='\x1b[10C')
+        token = ControlToken(value='10C')
         expected = {
-            'value': '10C',
+            'value': '10',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -222,9 +209,9 @@ class TestControlTokenCursorDown:
         assert str(token) == ' ' * 10
 
     def test_cursor_forward_1000_spaces(self) -> None:
-        token = ControlToken(value='\x1b[1000C')
+        token = ControlToken(value='1000C')
         expected = {
-            'value': '1000C',
+            'value': '1000',
             'value_name': 'CursorForward',
             'subtype': 'C',
         }
@@ -234,9 +221,9 @@ class TestControlTokenCursorDown:
 
 class TestControlTokenCursorPosition:
     def test_cursor_position(self) -> None:
-        token = ControlToken(value='\x1b[10;20H')
+        token = ControlToken(value='10;20H')
         expected = {
-            'value': '10;20H',
+            'value': '10;20',
             'value_name': 'CursorPosition',
             'subtype': 'H',
         }
@@ -246,9 +233,9 @@ class TestControlTokenCursorPosition:
 
 class TestControlTokenEraseInLine:
     def test_erase_in_line(self) -> None:
-        token = ControlToken(value='\x1b[K')
+        token = ControlToken(value='K')
         expected = {
-            'value': 'K',
+            'value': '',
             'value_name': 'EraseInLine',
             'subtype': 'K',
         }
@@ -262,8 +249,6 @@ class TestTrueColorTokens:
         token = TrueColorFGToken(value='255;128;64')
         expected = {
             'value': '255;128;64',
-            'value_name': '',
-            'colour_type': ColourType.FG,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[38;2;255;128;64m'
@@ -272,8 +257,6 @@ class TestTrueColorTokens:
         token = TrueColorBGToken(value='0;128;255')
         expected = {
             'value': '0;128;255',
-            'value_name': '',
-            'colour_type': ColourType.BG,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[48;2;0;128;255m'
@@ -294,8 +277,6 @@ class TestColor256Tokens:
         token = Color256FGToken(value='42')
         expected = {
             'value': '42',
-            'value_name': '',
-            'colour_type': ColourType.FG,
         }
         assert asdict(token) == expected
         assert str(token) == '\x1b[38;5;42m'
@@ -304,7 +285,6 @@ class TestColor256Tokens:
         token = Color256BGToken(value='196')
         expected = {
             'value': '196',
-            'value_name': '',
             'colour_type': ColourType.BG,
         }
         assert asdict(token) == expected

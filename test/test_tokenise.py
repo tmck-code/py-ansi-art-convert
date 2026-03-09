@@ -9,7 +9,10 @@ from ansi_art_convert.convert import (
     C0Token,
     Color8BGToken,
     Color8FGToken,
+    Color256BGToken,
+    Color256FGToken,
     ColorToken,
+    ColourType,
     ControlToken,
     CP437Token,
     NewLineToken,
@@ -115,7 +118,7 @@ class TestTokeniserColourTokens:
         )
 
     def test_create_color_token(self) -> None:
-        result = self.tokeniser.create_token(['\x1b', '[', '31', 'm'])
+        result = self.tokeniser.create_token('\x1b[31', 'm')
         expected = ColorToken(
             value='31',
             sgr_token=None,
@@ -126,7 +129,7 @@ class TestTokeniserColourTokens:
         assert asdict(result) == asdict(expected)
 
     def test_create_color_token_multiple_params(self) -> None:
-        result = self.tokeniser.create_token(['\x1b', '[', '1', ';', '31', 'm'])
+        result = self.tokeniser.create_token('\x1b[1;31', 'm')
         expected = ColorToken(
             value='1;31',
             sgr_token=SGRToken(value='1'),
@@ -138,28 +141,34 @@ class TestTokeniserColourTokens:
         assert asdict(result) == asdict(expected)
 
     def test_create_true_color_fg_token(self) -> None:
-        result = self.tokeniser.create_token(['\x1b', '[', '1', ';', '255', ';', '128', ';', '64', 't'])
-        expected = TrueColorFGToken(
-            value='255;128;64',
-        )
+        result = self.tokeniser.create_token('\x1b[1;255;128;64', 't')
+        expected = TrueColorFGToken(value='1;255;128;64')
         assert result == expected
 
     def test_create_true_color_bg_token(self) -> None:
-        result = self.tokeniser.create_token(['\x1b', '[', '0', ';', '0', ';', '255', ';', '128', 't'])
-        expected = TrueColorBGToken(
-            value='0;255;128',
-        )
+        result = self.tokeniser.create_token('\x1b[0;0;255;128', 't')
+        expected = TrueColorBGToken(value='0;0;255;128')
+        assert result == expected
+
+    def test_create_256_color_fg_token(self) -> None:
+        result = self.tokeniser.create_token('\x1b[38;5;123', 'm')
+        expected = Color256FGToken(value='123')
+        assert result == expected
+
+    def test_create_256_color_bg_token(self) -> None:
+        result = self.tokeniser.create_token('\x1b[48;5;45', 'm')
+        expected = Color256BGToken(value='45')
         assert result == expected
 
 
 class TestTokeniseUnknown(TokeniserTest):
     def test_create_unknown_token(self) -> None:
-        result = self.tokeniser.create_token(['\x1b[999Z'])
+        result = self.tokeniser.create_token('\x1b[999Z', '')
         expected = UnknownToken(value='\x1b[999Z')
         assert result == expected
 
     def test_create_token_too_short(self) -> None:
-        result = self.tokeniser.create_token(['\x1b'])
+        result = self.tokeniser.create_token('\x1b', '')
         expected = UnknownToken(value='\x1b')
         assert result == expected
 
@@ -236,7 +245,7 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.tokeniser.glyph_offset),
-            ControlToken(value='\x1b[5C'),
+            ControlToken(value='5C'),
             CP437Token(value='World', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected
@@ -246,7 +255,7 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.tokeniser.glyph_offset),
-            C0Token(value='\r', offset=self.tokeniser.glyph_offset),
+            C0Token(value='\r'),
             CP437Token(value='World', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected
@@ -297,7 +306,7 @@ class TestTokeniserTokenise:
                 fg_token=Color8FGToken(value='32', bright=True),
             ),
             CP437Token(value='Bold Green', offset=self.tokeniser.glyph_offset),
-            ControlToken(value='\x1b[10C'),
+            ControlToken(value='10C'),
             CP437Token(value='Spaced', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected
@@ -320,45 +329,53 @@ class TestTokeniserTokenise:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.tokeniser.glyph_offset),
-            C0Token(value='\t', offset=self.tokeniser.glyph_offset),
+            C0Token(value='\t'),
             CP437Token(value='World', offset=self.tokeniser.glyph_offset),
         ]
         assert result == expected
 
     def test_tokenise_cursor_position(self) -> None:
         self.tokeniser.data = '\x1b[10;20HText'
-        result = list(self.tokeniser.tokenise())
+        result = [(type(t), asdict(t)) for t in self.tokeniser.tokenise()]
         expected = [
-            ControlToken(value='\x1b[10;20H'),
-            CP437Token(value='Text', offset=self.tokeniser.glyph_offset),
+            (ControlToken, {'value': '10;20', 'value_name': 'CursorPosition', 'subtype': 'H'}),
+            (CP437Token, {'value': 'Text', 'offset': self.tokeniser.glyph_offset}),
         ]
         assert result == expected
 
     def test_create_cursor_up_token(self) -> None:
         self.tokeniser.data = '\x1b[5A'
-        result = list(self.tokeniser.tokenise())
+        result = [(type(t), asdict(t)) for t in self.tokeniser.tokenise()]
         expected = [
-            ControlToken(
-                value='\x1b[5A',
-            )
+            (ControlToken, {'value': '5', 'value_name': 'CursorUp', 'subtype': 'A'}),
         ]
         assert result == expected
 
     def test_tokenise_preserves_order(self) -> None:
         self.tokeniser.data = 'A\x1b[31mB\nC'
-        # result = [asdict(t) for t in self.tokeniser.tokenise()]
-        result = list(self.tokeniser.tokenise())
+        result = [(type(t), asdict(t)) for t in self.tokeniser.tokenise()]
         expected = [
-            CP437Token(value='A', offset=self.tokeniser.glyph_offset),
-            ColorToken(
-                value='31',
-                fg_token=Color8FGToken(value='31', bright=False),
+            (CP437Token, {'value': 'A', 'offset': self.tokeniser.glyph_offset}),
+            (
+                ColorToken,
+                {
+                    'value': '31',
+                    'fg_token': {
+                        'value': '31',
+                        'colour_type': ColourType.FG,
+                        'value_name': 'red',
+                        'bright': False,
+                    },
+                    'bg_token': None,
+                    'sgr_token': None,
+                    'ice_colour_mode': False,
+                    'parts': ['31'],
+                },
             ),
-            CP437Token(value='B', offset=self.tokeniser.glyph_offset),
-            NewLineToken(value='\n'),
-            CP437Token(value='C', offset=self.tokeniser.glyph_offset),
+            (CP437Token, {'value': 'B', 'offset': self.tokeniser.glyph_offset}),
+            (NewLineToken, {'value': '\n'}),
+            (CP437Token, {'value': 'C', 'offset': self.tokeniser.glyph_offset}),
         ]
-        # expected = [asdict(t) for t in expected]
         assert result == expected
 
 
@@ -376,7 +393,7 @@ class TestSaveRestoreCursor:
         set_glyph_offset(self.offset)
 
         self.save, self.restore = '\x1b[s', '\x1b[u'
-        self.save_token, self.restore_token = ControlToken(value=self.save), ControlToken(value=self.restore)
+        self.save_token, self.restore_token = ControlToken(value='s'), ControlToken(value='u')
 
     def test_tokenise_save(self) -> None:
         self.tokeniser.data = f'Hello{self.save} World'
@@ -384,7 +401,7 @@ class TestSaveRestoreCursor:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.offset),
-            ControlToken(value=self.save),
+            self.save_token,
             CP437Token(value=' World', offset=self.offset),
         ]
         assert result == expected
@@ -396,9 +413,9 @@ class TestSaveRestoreCursor:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.offset),
-            ControlToken(value=self.save),
+            self.save_token,
             CP437Token(value=' World', offset=self.offset),
-            ControlToken(value=self.restore),
+            self.restore_token,
             CP437Token(value='!', offset=self.offset),
         ]
         assert result == expected
@@ -410,9 +427,9 @@ class TestSaveRestoreCursor:
         result = list(self.tokeniser.tokenise())
         expected = [
             CP437Token(value='Hello', offset=self.offset),
-            ControlToken(value=self.save),
+            self.save_token,
             CP437Token(value=' World', offset=self.offset),
-            ControlToken(value=self.restore),
+            self.restore_token,
             CP437Token(value='!', offset=self.offset),
         ]
         assert result == expected
